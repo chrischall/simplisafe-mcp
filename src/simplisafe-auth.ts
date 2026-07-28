@@ -128,8 +128,15 @@ export const simplisafeAuth: ConnectorAuth<SimpliSafeProps> = {
     { name: 'email', label: 'SimpliSafe email (labels this connection)', type: 'text' },
     {
       name: 'callback',
-      label: 'Step 2: paste the com.simplisafe.mobile:// URL here (leave blank to start)',
+      label: 'Paste the com.simplisafe.mobile:// URL your browser failed to open',
       type: 'text',
+      // Hidden AND disabled until submission 1 asks for it. `disabled` is the
+      // load-bearing part: every field is `required` by default, and a required
+      // empty box makes the browser silently refuse to submit — which would make
+      // the first step, and therefore the whole flow, unreachable. It is also
+      // honest: before the authorize URL exists there is no callback URL to
+      // paste, so showing the box up front reads like the page claiming there is.
+      revealOnDemand: true,
     },
   ],
 
@@ -149,15 +156,27 @@ export const simplisafeAuth: ConnectorAuth<SimpliSafeProps> = {
         expirationTtl: BOOTSTRAP_TTL_SECONDS,
       });
 
-      throw new Error(
-        `Step 1 of 2 — open this URL in a new tab and sign in to SimpliSafe:\n\n` +
-          `${authorizeUrl(challenge, handle)}\n\n` +
-          `After signing in, your browser will FAIL to open a "com.simplisafe.mobile://…" ` +
-          `link. That failure is expected — copy that URL and paste it into the second box ` +
-          `below, then submit again.\n\n` +
-          `Tip: open DevTools → Network and tick "Preserve log" before signing in, then copy ` +
-          `the link address of the final failed request. The code expires in about 2 minutes.`,
+      // Rejecting here is how the harness renders step 2 — `revealFields`
+      // un-hides the callback box (both with JS and on a no-JS re-render). This
+      // is a PROMPT, not a failure, so the message reads as instructions.
+      const prompt = Object.assign(
+        new Error(
+          `Step 1 of 2 — open this URL in a new tab and sign in to SimpliSafe:\n\n` +
+            `${authorizeUrl(challenge, handle)}\n\n` +
+            `After signing in, your browser will FAIL to open a "com.simplisafe.mobile://…" ` +
+            `link. That failure is expected and is the point — that URL contains the code. ` +
+            `Copy it into the box below and submit again.\n\n` +
+            `Tip: open DevTools → Network, tick "Preserve log" BEFORE signing in, then copy ` +
+            `the link address of the final failed request. The code expires in ~2 minutes.`,
+        ),
+        {
+          revealFields: ['callback'],
+          fieldHints: {
+            callback: 'Starts with com.simplisafe.mobile:// and contains ?code=…&state=…',
+          },
+        },
       );
+      throw prompt;
     }
 
     // ---- Submission 2: finish the flow ------------------------------------
