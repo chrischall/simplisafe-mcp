@@ -1,0 +1,16 @@
+{
+  "name": "simplisafe-mcp",
+  "displayName": "SimpliSafe",
+  "version": "0.0.0",
+  "description": "MCP server for SimpliSafe — system state, sensors, events, arm/disarm and smart-lock control",
+  "author": {
+    "name": "Chris Hall",
+    "email": "chris.c.hall@gmail.com"
+  },
+  "homepage": "https://github.com/chrischall/simplisafe-mcp",
+  "repository": "https://github.com/chrischall/simplisafe-mcp",
+  "license": "MIT",
+  "keywords": ["simplisafe", "alarm", "home-security", "mcp"],
+  "skills": "./skills/",
+  "mcp": "./.mcp.json"
+}

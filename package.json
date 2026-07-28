@@ -1,0 +1,66 @@
+{
+  "name": "simplisafe-mcp",
+  "version": "0.0.0",
+  "mcpName": "io.github.chrischall/simplisafe-mcp",
+  "description": "SimpliSafe MCP server for Claude — developed and maintained by AI (Claude Code)",
+  "author": "Claude Code (AI) <https://www.anthropic.com/claude>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chrischall/simplisafe-mcp.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "ai",
+    "simplisafe",
+    "alarm",
+    "security-system",
+    "home-security",
+    "home-automation",
+    "sensors",
+    "smart-lock"
+  ],
+  "type": "module",
+  "bin": {
+    "simplisafe-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    ".claude-plugin",
+    "skills/",
+    ".mcp.json",
+    "server.json"
+  ],
+  "scripts": {
+    "build": "tsc && npm run bundle",
+    "bundle": "esbuild src/index.ts --bundle --platform=node --format=esm --external:dotenv --outfile=dist/bundle.js",
+    "dev": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy",
+    "worker:test": "vitest run --config vitest.workers.config.ts"
+  },
+  "dependencies": {
+    "@chrischall/mcp-utils": "^0.13.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.4.0",
+    "zod": "^4.4.2"
+  },
+  "devDependencies": {
+    "@chrischall/mcp-connector": "^1.1.1",
+    "@cloudflare/vitest-pool-workers": "^0.18.4",
+    "@cloudflare/workers-oauth-provider": "^0.8.1",
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "@types/node": "^26.0.0",
+    "@vitest/coverage-v8": "^4.1.2",
+    "agents": "^0.19.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.2",
+    "wrangler": "^4.110.0"
+  }
+}

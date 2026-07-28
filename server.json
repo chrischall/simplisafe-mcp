@@ -1,0 +1,29 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chrischall/simplisafe-mcp",
+  "description": "Check SimpliSafe system state and sensors, review events, arm/disarm, and control smart locks",
+  "repository": {
+    "url": "https://github.com/chrischall/simplisafe-mcp",
+    "source": "github"
+  },
+  "version": "0.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "simplisafe-mcp",
+      "version": "0.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "SIMPLISAFE_REFRESH_TOKEN",
+          "description": "OAuth refresh token from the one-time browser login (scripts/bootstrap-auth.mjs)",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

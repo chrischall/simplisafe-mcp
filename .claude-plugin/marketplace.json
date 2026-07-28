@@ -1,0 +1,27 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "simplisafe-mcp",
+  "owner": {
+    "name": "Chris Hall",
+    "email": "chris.c.hall@gmail.com"
+  },
+  "metadata": {
+    "description": "MCP server for SimpliSafe — system state, sensors, events, arm/disarm and smart-lock control",
+    "version": "0.0.0"
+  },
+  "plugins": [
+    {
+      "name": "simplisafe-mcp",
+      "displayName": "SimpliSafe",
+      "source": "./",
+      "description": "MCP server for SimpliSafe — check system state and sensors, review events, arm/disarm, control smart locks",
+      "version": "0.0.0",
+      "author": { "name": "Chris Hall" },
+      "homepage": "https://github.com/chrischall/simplisafe-mcp",
+      "repository": "https://github.com/chrischall/simplisafe-mcp",
+      "license": "MIT",
+      "keywords": ["simplisafe", "alarm", "home-security", "mcp"],
+      "category": "utilities"
+    }
+  ]
+}

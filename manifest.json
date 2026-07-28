@@ -1,0 +1,101 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/dxt/main/dist/mcpb-manifest.schema.json",
+  "manifest_version": "0.3",
+  "name": "simplisafe-mcp",
+  "display_name": "SimpliSafe",
+  "version": "0.0.0",
+  "description": "SimpliSafe home security for Claude — check system state and sensors, review events, arm/disarm, and control smart locks",
+  "author": {
+    "name": "Chris Chall",
+    "email": "chris.c.hall@gmail.com",
+    "url": "https://github.com/chrischall"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chrischall/simplisafe-mcp"
+  },
+  "homepage": "https://github.com/chrischall/simplisafe-mcp",
+  "support": "https://github.com/chrischall/simplisafe-mcp/issues",
+  "license": "MIT",
+  "keywords": [
+    "simplisafe",
+    "alarm",
+    "home-security",
+    "sensors",
+    "smart-lock"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/bundle.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/bundle.js"
+      ],
+      "env": {
+        "SIMPLISAFE_REFRESH_TOKEN": "${user_config.simplisafe_refresh_token}"
+      }
+    }
+  },
+  "user_config": {
+    "simplisafe_refresh_token": {
+      "type": "string",
+      "title": "SimpliSafe Refresh Token",
+      "description": "Minted by the one-time browser login: run `node scripts/bootstrap-auth.mjs` in the repo and follow its two steps. SimpliSafe issues no API keys, so this token is the credential.",
+      "required": true,
+      "sensitive": true
+    }
+  },
+  "tools": [
+    {
+      "name": "simplisafe_list_systems",
+      "description": "List systems on the account with current alarm state"
+    },
+    {
+      "name": "simplisafe_get_system",
+      "description": "Get one system's state, connectivity and base-station messages"
+    },
+    {
+      "name": "simplisafe_get_settings",
+      "description": "Get entry/exit delays, alarm volume and base-station health"
+    },
+    {
+      "name": "simplisafe_get_pins",
+      "description": "Read alarm PINs in cleartext (confirm-gated)"
+    },
+    {
+      "name": "simplisafe_list_sensors",
+      "description": "List sensors with battery, offline and triggered status"
+    },
+    {
+      "name": "simplisafe_list_locks",
+      "description": "List smart locks with locked/unlocked/jammed state"
+    },
+    {
+      "name": "simplisafe_get_events",
+      "description": "Get recent base-station events"
+    },
+    {
+      "name": "simplisafe_set_alarm_state",
+      "description": "Arm (home/away) or disarm the system (confirm-gated)"
+    },
+    {
+      "name": "simplisafe_set_lock_state",
+      "description": "Lock or unlock a smart lock (confirm-gated)"
+    },
+    {
+      "name": "simplisafe_healthcheck",
+      "description": "Check authentication and API reachability"
+    }
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=22.5"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+# Local Worker dev overrides for `wrangler dev` (copy to `.dev.vars`).
+#
+# SimpliSafe has NO app-level API credentials — each user's refresh token is
+# minted by the connector's own two-step OAuth login at /authorize and stored in
+# OAUTH_KV, not configured here. Nothing is required in this file to run the
+# hosted connector locally; it exists as the conventional place for any future
+# Worker-only dev override.

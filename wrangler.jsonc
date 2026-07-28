@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "simplisafe-connector",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // SimpliSafe is stateless here — only the per-session MCP agent Durable Object
+  // is declared (no message/data cache, so no cache DO like the OFW connector).
+  "durable_objects": {
+    "bindings": [{ "name": "MCP_OBJECT", "class_name": "SimpliSafeMcpAgent" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SimpliSafeMcpAgent"] }],
+  // simplisafe-connector's own OAuth token store. It ALSO holds the short-lived
+  // PKCE verifiers for in-progress logins (key prefix `ss_bootstrap:`, 15-minute
+  // TTL, deleted on use).
+  //
+  // Kept separate from every other connector's OAUTH_KV so OAuth grants never
+  // cross-wire. Create your own before the first deploy:
+  //   wrangler kv namespace create simplisafe-connector-oauth
+  // then paste the returned id below (it is a placeholder until you do).
+  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" }],
+  // Production custom domain (matches connector.splitwise.nullnet.app etc.).
+  // The zone must be in the deploying account. Remove to deploy to *.workers.dev only.
+  "routes": [{ "pattern": "connector.simplisafe.nullnet.app", "custom_domain": true }],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  }
+}
