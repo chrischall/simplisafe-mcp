@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/chrischall/simplisafe-mcp/compare/v0.1.0...v0.1.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* **connector:** keep the callback box revealed when a retry fails ([#6](https://github.com/chrischall/simplisafe-mcp/issues/6)) ([c69410c](https://github.com/chrischall/simplisafe-mcp/commit/c69410cd7b9df24de2fca2da896e4ca37f70bb44)), closes [#4](https://github.com/chrischall/simplisafe-mcp/issues/4)
+* **connector:** make the first login submit reachable ([#3](https://github.com/chrischall/simplisafe-mcp/issues/3)) ([0c42018](https://github.com/chrischall/simplisafe-mcp/commit/0c420183f2215933abbc21989e747d25a4c09a65))
+
 ## 0.1.0 (2026-07-28)
 
 

@@ -3,7 +3,7 @@
   "manifest_version": "0.3",
   "name": "simplisafe-mcp",
   "display_name": "SimpliSafe",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SimpliSafe home security for Claude — check system state and sensors, review events, arm/disarm, and control smart locks",
   "author": {
     "name": "Chris Chall",
