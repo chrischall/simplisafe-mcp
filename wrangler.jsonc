@@ -15,10 +15,16 @@
   // TTL, deleted on use).
   //
   // Kept separate from every other connector's OAUTH_KV so OAuth grants never
-  // cross-wire. Create your own before the first deploy:
+  // cross-wire. To stand this up in a different account, create your own:
   //   wrangler kv namespace create simplisafe-connector-oauth
-  // then paste the returned id below (it is a placeholder until you do).
-  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" }],
+  // and replace the id below.
+  //
+  // NOTE: the binding NAME must stay `OAUTH_KV` — @chrischall/mcp-connector's
+  // OAuth provider resolves that exact name. `wrangler kv namespace create`
+  // suggests a binding derived from the namespace TITLE
+  // (`simplisafe_connector_oauth`); using that suggestion verbatim leaves the
+  // provider with no store and breaks the login flow. Only the id is per-account.
+  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "98b2d30e0d8b4547ad88ffea8dc90195" }],
   // Production custom domain (matches connector.splitwise.nullnet.app etc.).
   // The zone must be in the deploying account. Remove to deploy to *.workers.dev only.
   "routes": [{ "pattern": "connector.simplisafe.nullnet.app", "custom_domain": true }],
