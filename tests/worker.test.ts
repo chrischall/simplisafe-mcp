@@ -96,6 +96,35 @@ describe('SimpliSafe connector — two-step PKCE login', () => {
     );
   });
 
+  it('keeps the callback box revealed on EVERY submission-2 failure', async () => {
+    // A re-render hides a revealOnDemand field unless the rejection names it, so
+    // a failed retry would hide the box the user needs to fix — the same
+    // stranding as the required-empty-box bug, but only without JS.
+    const state = crypto.randomUUID();
+    await env.OAUTH_KV.put(`ss_bootstrap:${state}`, 'seededverifier123', { expirationTtl: 900 });
+
+    const failures: Record<string, string> = {
+      unparseable: 'this is not a url at all',
+      'no state': 'com.simplisafe.mobile://cb?code=abc123',
+      'unknown handle': 'com.simplisafe.mobile://cb?code=abc&state=00000000-0000-0000-0000-000000000000',
+      'rejected code': `com.simplisafe.mobile://cb?code=bogus&state=${state}`,
+    };
+
+    for (const [label, callback] of Object.entries(failures)) {
+      let err: unknown;
+      try {
+        await simplisafeAuth.login({ email: 'a@example.com', callback }, env);
+      } catch (e) {
+        err = e;
+      }
+      expect(err, `${label} should reject`).toBeDefined();
+      expect((err as { revealFields?: string[] }).revealFields, label).toEqual(['callback']);
+      // Still a real error, not a silent prompt: the harness only suppresses its
+      // generic fallback for an EMPTY message.
+      expect((err as Error).message, label).not.toBe('');
+    }
+  });
+
   it('the stashed handle is a PKCE verifier only — never a credential', async () => {
     let authorizeUrl = '';
     try {
