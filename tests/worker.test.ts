@@ -34,6 +34,29 @@ describe('SimpliSafe connector — OAuth surface', () => {
     expect(res.status).toBe(401);
   });
 
+  it('does NOT block the first submit with a required, empty callback box', async () => {
+    // The bug this guards: every login field is `required` by default, so an
+    // empty callback box made the browser silently refuse to submit — no
+    // request, no authorize URL, no explanation, and the whole two-step flow
+    // unreachable. Asserts the rendered OUTCOME, not that some flag was set.
+    const res = await SELF.fetch(
+      'https://example.com/authorize?response_type=code&state=abc&redirect_uri=' +
+        encodeURIComponent('https://example.com/callback'),
+    );
+    const html = await res.text();
+
+    const callbackInput = html.match(/<input[^>]*name="callback"[^>]*>/)?.[0] ?? '';
+    expect(callbackInput, 'callback input should render').not.toBe('');
+    // Disabled is the load-bearing part: excluded from native validation AND
+    // from submission, so an empty box cannot block step 1.
+    expect(callbackInput).toContain('disabled');
+    expect(callbackInput).not.toMatch(/\srequired/);
+
+    // The email field, by contrast, is genuinely required on step 1.
+    const emailInput = html.match(/<input[^>]*name="email"[^>]*>/)?.[0] ?? '';
+    expect(emailInput).toMatch(/\srequired/);
+  });
+
   it('GET /authorize renders the login page with both bootstrap fields', async () => {
     // `redirect_uri` is required: workers-oauth-provider 0.8.x validates the
     // scheme unconditionally and rejects the empty string an absent value becomes.
@@ -56,6 +79,21 @@ describe('SimpliSafe connector — two-step PKCE login', () => {
     await expect(
       simplisafeAuth.login({ email: 'someone@example.com', callback: '' }, env),
     ).rejects.toThrow(/Step 1 of 2[\s\S]*auth\.simplisafe\.com\/authorize/);
+  });
+
+  it('submission 1 asks the harness to REVEAL the callback box', async () => {
+    // Without revealFields the box stays hidden and disabled, so step 2 is
+    // unreachable even though step 1 succeeded.
+    let err: unknown;
+    try {
+      await simplisafeAuth.login({ email: 'someone@example.com', callback: '' }, env);
+    } catch (e) {
+      err = e;
+    }
+    expect((err as { revealFields?: string[] }).revealFields).toEqual(['callback']);
+    expect((err as { fieldHints?: Record<string, string> }).fieldHints?.callback).toMatch(
+      /com\.simplisafe\.mobile/,
+    );
   });
 
   it('the stashed handle is a PKCE verifier only — never a credential', async () => {
