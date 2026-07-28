@@ -180,6 +180,34 @@ export const simplisafeAuth: ConnectorAuth<SimpliSafeProps> = {
     }
 
     // ---- Submission 2: finish the flow ------------------------------------
+    // Every failure below must keep the callback box REVEALED. A server-side
+    // re-render re-hides a revealOnDemand field unless the rejection names it
+    // (`hidden = revealOnDemand && !revealFields.includes(name)`), so a mistyped
+    // or expired code would otherwise hide the very box the user needs in order
+    // to correct it — stranding them exactly like the required-empty-box bug
+    // this flow was just fixed for, but only on the no-JS path, which is the
+    // sort of asymmetry nobody notices until someone is stuck.
+    //
+    // This does NOT disguise a real error as a prompt: the harness suppresses
+    // its generic "Sign-in failed" fallback only when the message is EMPTY, and
+    // every rejection below carries a specific one.
+    try {
+      return await completeBootstrap(callback, kv);
+    } catch (err) {
+      throw Object.assign(err instanceof Error ? err : new Error(String(err)), {
+        revealFields: ['callback'],
+      });
+    }
+  },
+};
+
+/**
+ * Submission 2: turn the pasted callback URL into a durable refresh token.
+ *
+ * Split out so the caller can attach `revealFields` to ANY failure in one place
+ * — enumerating the throw sites instead would silently miss the next one added.
+ */
+async function completeBootstrap(callback: string, kv: KvLike): Promise<SimpliSafeProps> {
     const { code, state } = parseCallback(callback);
     if (!state) {
       throw new Error(
@@ -238,5 +266,4 @@ export const simplisafeAuth: ConnectorAuth<SimpliSafeProps> = {
     const userId = await client.getUserId();
 
     return { refreshToken: tokens.refresh_token, userId };
-  },
-};
+}
