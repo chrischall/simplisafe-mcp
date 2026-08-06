@@ -94,16 +94,6 @@ With `confirm: true`, the tool executes and then **re-reads the system** to chec
 what actually happened, reporting `confirmed`, `in_progress` (the exit delay is
 counting down), or `unconfirmed`. A `2xx` is never treated as proof.
 
-## Hosted connector (optional)
-
-The same tools can run as a Cloudflare Worker so they're reachable from
-claude.ai on the web, desktop and phone. This archetype supports it because auth
-is a non-rotating refresh token — no browser bridge, no signed-in tab.
-
-The connector runs the whole OAuth bootstrap **itself**, as a two-step login
-page, so it doesn't depend on a local install and you never paste a long-lived
-credential. See [docs/DEPLOY-CONNECTOR.md](docs/DEPLOY-CONNECTOR.md).
-
 ## Shell access without the server
 
 For quick one-off queries there's a `curl`-based skill in
@@ -115,8 +105,7 @@ process, sharing the same refresh token.
 ```bash
 npm install
 npm run build
-npm test              # node suite
-npm run worker:test   # Workers-runtime suite (connector)
+npm test
 ```
 
 Verified endpoint shapes live in

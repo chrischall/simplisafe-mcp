@@ -11,11 +11,10 @@ import {
 import { TokenManager } from '@chrischall/mcp-utils/session';
 
 // Load .env for local dev; silently skip if dotenv is unavailable (e.g. the
-// .mcpb bundle). The try/catch guards the Cloudflare Worker runtime, where
+// .mcpb bundle). The try/catch guards a non-Node runtime, where
 // `import.meta.url` is undefined and `fileURLToPath(undefined)` would throw at
-// module init — that throw fails Worker STARTUP VALIDATION on deploy, and
-// neither `worker:test` (Miniflare provides import.meta.url) nor
-// `wrangler deploy --dry-run` catches it. There is no filesystem there anyway.
+// module init — that throw fails startup validation in such a runtime, and
+// a Node test run does not catch it. There is no filesystem there anyway.
 try {
   const dir = dirname(fileURLToPath(import.meta.url));
   await loadDotenvSafely({ path: join(dir, '..', '.env'), override: false });
@@ -60,7 +59,7 @@ export interface SimpliSafeSystemSummary {
  * Auth is a one-time browser OAuth2/PKCE bootstrap (`scripts/bootstrap-auth.mjs`)
  * that yields a long-lived refresh token; from then on the client mints access
  * tokens headlessly. No browser, no bridge, no MFA prompt at runtime — which is
- * also what makes the hosted Cloudflare connector viable for this service.
+ * also what makes hosting this service viable at all.
  */
 export class SimpliSafeClient {
   private readonly refreshToken: string | null;
@@ -74,12 +73,12 @@ export class SimpliSafeClient {
    * install-time tools/list probe) when SIMPLISAFE_REFRESH_TOKEN is absent — the
    * error surfaces on the first tool call instead.
    *
-   * The optional `refreshToken` seam lets the hosted connector build one client
+   * The optional `refreshToken` seam lets a hosted deployment build one client
    * per authenticated user; the stdio path passes nothing and resolves from env
    * exactly as before.
    *
    * The constructor is deliberately PURE — no fetch, no timers, no random values.
-   * A module-level singleton is constructed in global scope when the Worker's
+   * A module-level singleton is constructed in global scope when the
    * module graph loads, and the Workers runtime forbids all three there
    * (`wrangler deploy` fails startup validation with code 10021).
    */

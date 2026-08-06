@@ -29,7 +29,7 @@ describe('deferred config error', () => {
     await expect(client.getUserId()).rejects.toThrow(/SIMPLISAFE_REFRESH_TOKEN is not set/);
   });
 
-  it('accepts an injected refresh token, for the hosted connector path', () => {
+  it('accepts an injected refresh token, for the injected-credential path', () => {
     const client = new SimpliSafeClient({ refreshToken: 'injected-token' });
     // No throw on a subsequent call means the config error was not armed.
     expect(client).toBeInstanceOf(SimpliSafeClient);

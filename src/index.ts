@@ -16,7 +16,7 @@ import { registerUtilityTools } from './tools/utilities.js';
 // first request, so the server boots and answers the host's install-time
 // tools/list probe even with no refresh token configured.
 //
-// The hosted connector (src/worker.ts) injects its own per-user client into
+// A hosted per-user deployment injects its own client into
 // these same registrars instead of this singleton.
 await runMcp({
   name: 'simplisafe-mcp',
