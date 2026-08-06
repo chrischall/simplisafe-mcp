@@ -3,7 +3,5 @@ dist/
 coverage/
 .env*
 !.env.example
-!.dev.vars.example
 *.tsbuildinfo
 .auth-bootstrap.json
-.wrangler/
