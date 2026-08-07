@@ -70,8 +70,8 @@ This single fact decides the architecture:
 
 - the browser login is a **one-time bootstrap**, never repeated;
 - the server refreshes headlessly, with no MFA prompt and no human;
-- a **hosted connector is viable**, because a stable refresh token can live in
-  encrypted OAuth props (a rotating one would need writable per-user storage).
+- **hosting is viable**, because a stable refresh token can live in encrypted
+  per-user credential storage (a rotating one would need writable storage).
 
 The client still adopts a `refresh_token` if one ever appears, so enabling
 rotation upstream would not silently strand it.
