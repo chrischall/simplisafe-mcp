@@ -78,9 +78,9 @@ export class SimpliSafeClient {
    * exactly as before.
    *
    * The constructor is deliberately PURE — no fetch, no timers, no random values.
-   * A module-level singleton is constructed in global scope when the
-   * module graph loads, and the Workers runtime forbids all three there
-   * (`wrangler deploy` fails startup validation with code 10021).
+   * A module-level singleton is constructed in global scope when the module
+   * graph loads, and sandboxed runtimes forbid all three there — a violation
+   * fails startup validation rather than a request.
    */
   constructor(opts?: { refreshToken?: string }) {
     const token = opts?.refreshToken ?? readEnvVar('SIMPLISAFE_REFRESH_TOKEN');
