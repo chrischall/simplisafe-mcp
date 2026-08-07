@@ -5,4 +5,4 @@
  * package.json / manifest.json / server.json / .claude-plugin/* in step via the
  * `extra-files` list in release-please-config.json. Never hand-edit it.
  */
-export const VERSION = '0.1.1'; // x-release-please-version
+export const VERSION = '0.1.2'; // x-release-please-version
