@@ -1,7 +1,7 @@
 {
   "name": "simplisafe-mcp",
   "displayName": "SimpliSafe",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server for SimpliSafe — system state, sensors, events, arm/disarm and smart-lock control",
   "author": {
     "name": "Chris Hall",
