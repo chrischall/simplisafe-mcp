@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.2](https://github.com/chrischall/simplisafe-mcp/compare/v0.1.1...v0.1.2) (2026-08-07)
+
+
+### Bug Fixes
+
+* **connector:** finish the retirement sweep ([#14](https://github.com/chrischall/simplisafe-mcp/issues/14)) ([63376d9](https://github.com/chrischall/simplisafe-mcp/commit/63376d9cf43948669dd07406fdd4babd7760c15a))
+
+
+### Refactor
+
+* **connector:** retire the standalone Cloudflare Worker connector ([#11](https://github.com/chrischall/simplisafe-mcp/issues/11)) ([8f47654](https://github.com/chrischall/simplisafe-mcp/commit/8f4765437b61392f7e09c5708679d9c5261d6887))
+
 ## [0.1.1](https://github.com/chrischall/simplisafe-mcp/compare/v0.1.0...v0.1.1) (2026-07-28)
 
 
