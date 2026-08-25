@@ -1,0 +1,25 @@
+version: 1
+name: SimpliSafe
+slug: simplisafe
+summary: >-
+  SimpliSafe home security for Claude — check system state and sensors,
+  review events, arm/disarm, and control smart locks
+env:
+  - name: SIMPLISAFE_REFRESH_TOKEN
+    secret: true
+    required: true
+    help: >-
+      OAuth refresh token from the one-time browser login
+      (scripts/bootstrap-auth.mjs)
+state:
+  dataDir: true
+  reason: >-
+    Persists the saved session/token under $HOME so authentication survives a
+    restart. Without it every cold start re-authenticates, which a hosted
+    child may be unable to do unaided.
+egress:
+  allow:
+    # Only hosts the SERVER process actually fetches. Hosts that appear
+    # solely in a URL this server BUILDS and returns are excluded.
+    - api.simplisafe.com
+    - auth.simplisafe.com
