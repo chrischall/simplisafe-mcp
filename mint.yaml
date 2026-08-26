@@ -11,12 +11,28 @@ env:
     help: >-
       OAuth refresh token from the one-time browser login
       (scripts/bootstrap-auth.mjs)
+  - name: SIMPLISAFE_TOKEN_CACHE
+    secret: false
+    required: false
+    help: >-
+      Set to false to disable the on-disk token cache. Accepts re-running
+      scripts/bootstrap-auth.mjs if a rotated refresh token is lost.
+  - name: SIMPLISAFE_TOKEN_FILE
+    secret: false
+    required: false
+    help: >-
+      Absolute path for the token cache file. Defaults to
+      $MCP_DATA_DIR/.simplisafe-mcp/token.json.
 state:
   dataDir: true
   reason: >-
-    Persists the saved session/token under $HOME so authentication survives a
-    restart. Without it every cold start re-authenticates, which a hosted
-    child may be unable to do unaided.
+    Keeps the OAuth token pair at $MCP_DATA_DIR/.simplisafe-mcp/token.json
+    (0600). SimpliSafe's exchange can return a NEW refresh token, and the
+    client rotates onto it — so without a persistent dir that rotation is lost
+    on exit and every start replays the token from SIMPLISAFE_REFRESH_TOKEN. If
+    the service invalidates the old token when it issues a new one, that leaves
+    no usable credential and the operator re-running scripts/bootstrap-auth.mjs
+    by hand.
 egress:
   allow:
     # Only hosts the SERVER process actually fetches. Hosts that appear

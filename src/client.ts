@@ -9,6 +9,7 @@ import {
   type ApiClient,
 } from '@chrischall/mcp-utils';
 import { TokenManager } from '@chrischall/mcp-utils/session';
+import { createTokenCache, failOnCacheWriteError } from './token-cache.js';
 
 // Load .env for local dev; silently skip if dotenv is unavailable (e.g. the
 // .mcpb bundle). The try/catch guards a non-Node runtime, where
@@ -99,12 +100,24 @@ export class SimpliSafeClient {
     } else {
       this.refreshToken = token;
       this.configError = null;
+      const cache = createTokenCache();
       this.tokens = new TokenManager({
-        // No access token yet and an expiry in the past, so the first request
-        // triggers a refresh. TokenManager coalesces a concurrent burst onto a
-        // single in-flight exchange.
-        initial: { accessToken: '', refreshToken: token, expiresAt: 0 },
+        // The FUNCTION form, so a cached pair is consulted before the env token
+        // is used at all — the eager object form skips persistence entirely.
+        // The fallback is the old behaviour: no access token and an expiry in
+        // the past, so the first request triggers a refresh. TokenManager
+        // coalesces a concurrent burst onto a single in-flight exchange.
+        initial: async () => ({ accessToken: '', refreshToken: token, expiresAt: 0 }),
         refresh: (rt) => this.exchangeRefreshToken(rt),
+        persistence: cache ?? undefined,
+        // The bootstrap IS the env refresh token, so re-running it after a
+        // failed refresh retries the exact exchange that just failed — and
+        // burns a second call against a token the service has likely revoked.
+        // Without this the revoked-token path exchanged twice.
+        isRefreshRevoked: () => false,
+        // Fatal rather than reported — see failOnCacheWriteError for why the
+        // asymmetry favours failing loudly here.
+        onPersistError: failOnCacheWriteError,
       });
     }
 
