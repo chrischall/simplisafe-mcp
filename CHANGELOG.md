@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3](https://github.com/chrischall/simplisafe-mcp/compare/v0.1.2...v0.1.3) (2026-08-28)
+
+
+### Bug Fixes
+
+* persist the rotated refresh token instead of losing it on exit ([#26](https://github.com/chrischall/simplisafe-mcp/issues/26)) ([0bce08f](https://github.com/chrischall/simplisafe-mcp/commit/0bce08fa8492476b567eccb5125cc81bb588acc2))
+
+
+### Documentation
+
+* publish the cache env vars in server.json and .env.example ([#31](https://github.com/chrischall/simplisafe-mcp/issues/31)) ([a0cd64c](https://github.com/chrischall/simplisafe-mcp/commit/a0cd64c332107fdb6022c921795d99e83c5cec33))
+
 ## [0.1.2](https://github.com/chrischall/simplisafe-mcp/compare/v0.1.1...v0.1.2) (2026-08-07)
 
 
