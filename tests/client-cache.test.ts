@@ -97,11 +97,15 @@ describe('client + token cache, wired together', () => {
 
     expect(tokenCalls(second)).toHaveLength(0);
     const apiCall = second.mock.calls.find((c) => String(c[0]).includes('authCheck'));
-    const headers = (apiCall?.[1] as { headers?: Record<string, string> })?.headers ?? {};
+    // Read through Headers rather than indexing the init object: header names
+    // are case-insensitive, so a plain `.Authorization` lookup would miss an
+    // `authorization` key and fail for a reason that has nothing to do with
+    // what this test is about.
+    const headers = new Headers((apiCall?.[1] as RequestInit | undefined)?.headers);
     // Not just "no refresh happened" — the RESTORED token is the one on the
     // wire. A manager that skipped the exchange but sent an empty bearer would
     // pass the count assertion and fail every real request.
-    expect(headers.Authorization).toBe('Bearer access-minted');
+    expect(headers.get('authorization')).toBe('Bearer access-minted');
   });
 
   it('exchanges again after the bootstrap token is rotated', async () => {
