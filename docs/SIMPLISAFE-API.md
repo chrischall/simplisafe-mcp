@@ -224,6 +224,31 @@ stop on either the expected state or a jam.
 The alarm state settles much faster (confirmed at 2.5 s), but arming to `away`
 sits at `AWAY_COUNT` for the 60 s exit delay first.
 
+## Response shape — minified, and deliberately no `view` parameter
+
+Every tool result goes through `minifiedResult` (`@chrischall/mcp-utils`): one
+line of JSON, no indentation. Indentation is tokens the caller pays for and
+never reads. Whitespace *inside* a value is untouched.
+
+There is **no `view: compact | full` parameter, and that is a decision.** The
+fleet's `view` rung strips image/avatar URLs out of an upstream payload a server
+hands back close to verbatim. That does not describe this server: the reads run
+through `src/normalize.ts`'s fixed field allowlists (`normalizeSystem`,
+`normalizeSensor`, `normalizeEvent`) or through explicit object literals, and the
+four surfaces that *are* passed through verbatim — `settings.normal`,
+`basestationStatus`, `sensors[].status`, `location.system.messages` — are the
+field lists documented above: booleans, small ints, and short strings. Not one
+media field among them. Stripping would remove zero bytes.
+
+The forward-looking half matters more. `normalize.ts`'s device table already
+names `camera` (12), `doorbell` (15) and `outdoor_camera` (17), even though no
+camera id has been observed live. If a snapshot or clip tool is ever added, it is
+the one place media-stripping must **not** go: its product *is* the image, so
+stripping does not shrink the response, it empties it. A `src/view.ts` was added
+here by a fleet rollout, wired to nothing, and removed — leaving a ready-made
+`viewArg()` in `src/` would have been an invitation to reach for it by symmetry
+on exactly that tool.
+
 ## Status of live verification
 
 | Surface | Status |
