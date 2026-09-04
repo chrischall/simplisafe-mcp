@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { textResult, toolAnnotations, PositiveInt } from '@chrischall/mcp-utils';
+import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
 import { previewUnlessConfirmed, schemaConfirm } from './_confirm.js';
@@ -23,7 +23,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
     async () => {
       const subs = await client.listSubscriptions();
       const systems = subs.map(normalizeSystem);
-      return textResult({ count: systems.length, systems });
+      return minifiedResult({ count: systems.length, systems });
     },
   );
 
@@ -41,7 +41,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
       const location = (system.raw.location ?? {}) as Record<string, unknown>;
       const raw = (location.system ?? {}) as Record<string, unknown>;
 
-      return textResult({
+      return minifiedResult({
         ...normalizeSystem(system.raw),
         messages: (raw.messages as unknown[]) ?? [],
       });
@@ -73,7 +73,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
       // Deliberately projects `settings.normal` only. The sibling `settings.pins`
       // block holds cleartext alarm codes and is reachable solely through the
       // confirm-gated simplisafe_get_pins tool.
-      return textResult({
+      return minifiedResult({
         sid: system.sid,
         lastUpdated: res.lastUpdated,
         settings: res.settings?.normal ?? {},
@@ -115,7 +115,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
         settings?: { pins?: Record<string, unknown> };
       }>('GET', path, { query: { forceUpdate: 'false' } });
 
-      return textResult({
+      return minifiedResult({
         sid: system.sid,
         warning: 'Cleartext alarm PINs follow.',
         pins: res.settings?.pins ?? {},

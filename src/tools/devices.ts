@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { textResult, toolAnnotations, PositiveInt } from '@chrischall/mcp-utils';
+import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSensor, deviceTypeName, lockStateName } from '../normalize.js';
 
@@ -69,7 +69,7 @@ export function registerDeviceTools(server: McpServer, client: SimpliSafeClient)
         );
       }
 
-      return textResult({
+      return minifiedResult({
         sid: systemId,
         count: normalized.length,
         // A quick roster of what types exist, so a follow-up filter needn't guess.
@@ -125,7 +125,7 @@ export function registerDeviceTools(server: McpServer, client: SimpliSafeClient)
           };
         });
 
-      return textResult({
+      return minifiedResult({
         sid: systemId,
         count: locks.length,
         // State the freshness explicitly: a cached reading is materially less

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { textResult, toolAnnotations, PositiveInt } from '@chrischall/mcp-utils';
+import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
 import { previewUnlessConfirmed, schemaConfirm } from './_confirm.js';
@@ -125,7 +125,7 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
       const after = normalizeSystem(refreshed.raw);
       const { verdict, detail } = classifyStateChange(state, before.alarmState, after.alarmState);
 
-      return textResult({
+      return minifiedResult({
         sid: system.sid,
         requestedState: state.toUpperCase(),
         previousState: before.alarmState,
