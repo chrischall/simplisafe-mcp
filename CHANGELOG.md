@@ -5,7 +5,7 @@
 
 ### Features
 
-* **tools:** compact by default — strip media URLs, and minify every response ([#44](https://github.com/chrischall/simplisafe-mcp/issues/44)) ([35338d0](https://github.com/chrischall/simplisafe-mcp/commit/35338d0583bf2a3dfe2ba0c8f989c24c3a870834))
+* **tools:** minify every response — no formatting whitespace on any payload ([#44](https://github.com/chrischall/simplisafe-mcp/issues/44)) ([35338d0](https://github.com/chrischall/simplisafe-mcp/commit/35338d0583bf2a3dfe2ba0c8f989c24c3a870834))
 
 
 ### Bug Fixes
