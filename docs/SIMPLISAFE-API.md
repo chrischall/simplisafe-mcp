@@ -234,16 +234,35 @@ There is **no `view: compact | full` parameter, and that is a decision.** The
 fleet's `view` rung strips image/avatar URLs out of an upstream payload a server
 hands back close to verbatim. That does not describe this server: the reads run
 through `src/normalize.ts`'s fixed field allowlists (`normalizeSystem`,
-`normalizeSensor`, `normalizeEvent`) or through explicit object literals, and the
-four surfaces that *are* passed through verbatim — `settings.normal`,
-`basestationStatus`, `sensors[].status`, `location.system.messages` — are the
-field lists documented above: booleans, small ints, and short strings. Not one
-media field among them. Stripping would remove zero bytes.
+`normalizeSensor`, `normalizeEvent`) or through explicit object literals. Four
+surfaces *are* passed through verbatim, and they split in two — which is worth
+separating rather than asserting in one breath:
 
-The forward-looking half matters more. `normalize.ts`'s device table already
-names `camera` (12), `doorbell` (15) and `outdoor_camera` (17), even though no
-camera id has been observed live. If a snapshot or clip tool is ever added, it is
-the one place media-stripping must **not** go: its product *is* the image, so
+- **`settings.normal` and `basestationStatus`** are the field lists documented
+  above: delays, volumes, chime and voice flags; `wifiRssi`, `wallPower`,
+  `backupBattery`, `rfJamming`. Booleans, small ints and short strings, and not
+  a media field among them.
+- **`sensors[].status` (for anything but a lock) and `location.system.messages`
+  have no documented field-by-field shape in this file, and this section is not
+  going to pretend otherwise.** The `status` block is documented for `type: 16`
+  only; every other device type keeps whatever it sent, which is the *point* of
+  `normalizeSensor` preserving a non-empty `status` wholesale — device ids `21`,
+  `23` and `24` are not even in the reference client's enum. `messages` appears
+  in the system table as a name and nothing more: no element shape is recorded
+  anywhere in this repo. For these two the basis is weaker than documentation —
+  no camera or doorbell has been seen live, so no media field has been
+  *observed*, which is not the same as knowing none can appear.
+
+So the honest version of "stripping would remove zero bytes" is: measured on
+every payload seen so far, yes — and unverifiable for the two surfaces above,
+because their shape is not pinned anywhere. That does not weaken the decision,
+because the decision does not rest on it.
+
+The forward-looking half is what actually carries the decision.
+`normalize.ts`'s device table already names `camera` (12), `doorbell` (15) and
+`outdoor_camera` (17), even though no camera id has been observed live. If a
+snapshot or clip tool is ever added, it is the one place media-stripping must
+**not** go: its product *is* the image, so
 stripping does not shrink the response, it empties it. A `src/view.ts` was added
 here by a fleet rollout, wired to nothing, and removed — leaving a ready-made
 `viewArg()` in `src/` would have been an invitation to reach for it by symmetry
