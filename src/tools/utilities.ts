@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { textResult, toolAnnotations, messageOf } from '@chrischall/mcp-utils';
+import { messageOf, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { VERSION } from '../version.js';
 
@@ -21,7 +21,7 @@ export function registerUtilityTools(server: McpServer, client: SimpliSafeClient
         const userId = await client.getUserId();
         const subs = await client.listSubscriptions();
 
-        return textResult({
+        return minifiedResult({
           status: 'ok',
           version: VERSION,
           authenticated: true,
@@ -30,7 +30,7 @@ export function registerUtilityTools(server: McpServer, client: SimpliSafeClient
           systemIds: subs.map((s) => Number(s.sid)),
         });
       } catch (err) {
-        return textResult({
+        return minifiedResult({
           status: 'error',
           version: VERSION,
           authenticated: false,

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { textResult, toolAnnotations, PositiveInt } from '@chrischall/mcp-utils';
+import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeEvent } from '../normalize.js';
 
@@ -57,7 +57,7 @@ export function registerEventTools(server: McpServer, client: SimpliSafeClient):
         events = events.filter((e) => e.eventType?.toLowerCase() === want);
       }
 
-      return textResult({ sid: system.sid, count: events.length, events });
+      return minifiedResult({ sid: system.sid, count: events.length, events });
     },
   );
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { textResult, toolAnnotations, PositiveInt, McpToolError } from '@chrischall/mcp-utils';
+import { McpToolError, PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { lockStateName } from '../normalize.js';
 import { previewUnlessConfirmed, schemaConfirm } from './_confirm.js';
@@ -137,7 +137,7 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
           `simplisafe_list_locks — a slow lock may yet complete.`;
       }
 
-      return textResult({
+      return minifiedResult({
         sid: system.sid,
         serial,
         lockName: name,
