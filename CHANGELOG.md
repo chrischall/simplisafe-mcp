@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.2.0](https://github.com/chrischall/simplisafe-mcp/compare/v0.1.3...v0.2.0) (2026-09-04)
+
+
+### Features
+
+* **tools:** minify every response — no formatting whitespace on any payload ([#44](https://github.com/chrischall/simplisafe-mcp/issues/44)) ([35338d0](https://github.com/chrischall/simplisafe-mcp/commit/35338d0583bf2a3dfe2ba0c8f989c24c3a870834))
+
+
+### Bug Fixes
+
+* **build:** restore the literal em dash in the package description ([#48](https://github.com/chrischall/simplisafe-mcp/issues/48)) ([58f7d85](https://github.com/chrischall/simplisafe-mcp/commit/58f7d85014ba389660ac3fa7ac608694d69a1a12))
+
+
+### Refactor
+
+* **tools:** drop the unused src/view.ts scaffolding ([#49](https://github.com/chrischall/simplisafe-mcp/issues/49)) ([c93f9b5](https://github.com/chrischall/simplisafe-mcp/commit/c93f9b5a570d4532647b5557de7897bead5bb907))
+
+
+### Documentation
+
+* **api:** stop claiming two undocumented surfaces are "documented above" ([#51](https://github.com/chrischall/simplisafe-mcp/issues/51)) ([408f64b](https://github.com/chrischall/simplisafe-mcp/commit/408f64b15da9470348a1cba5f0fcba23eb904ef7))
+
 ## [0.1.3](https://github.com/chrischall/simplisafe-mcp/compare/v0.1.2...v0.1.3) (2026-08-28)
 
 
