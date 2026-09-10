@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/chrischall/simplisafe-mcp/compare/v0.2.0...v0.2.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **deps:** @chrischall/mcp-utils 0.26.1 ([#60](https://github.com/chrischall/simplisafe-mcp/issues/60)) ([433edce](https://github.com/chrischall/simplisafe-mcp/commit/433edce08cec037060cf220ae977df63bccd2a14))
+* **deps:** bump hono from 4.13.0 to 4.13.7 ([#58](https://github.com/chrischall/simplisafe-mcp/issues/58)) ([6798cf7](https://github.com/chrischall/simplisafe-mcp/commit/6798cf737a720074ba8f7f1d55702e4a58596dbb))
+
 ## [0.2.0](https://github.com/chrischall/simplisafe-mcp/compare/v0.1.3...v0.2.0) (2026-09-04)
 
 
