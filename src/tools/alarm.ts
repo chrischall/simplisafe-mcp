@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
@@ -92,13 +92,13 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
         'unmonitored, and arming can trigger a siren and a monitoring-center dispatch. ' +
         'After executing, the new state is verified by re-reading the system.',
       annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true }),
-      inputSchema: {
+      inputSchema: z.object({
         state: z.enum(ALARM_STATES).describe('Target state: off (disarm), home, or away.'),
         sid: PositiveInt.optional().describe(
           'System id. Optional when the account has exactly one system; required when it has several.',
         ),
         confirm: schemaConfirm,
-      },
+      }),
     },
     async ({ state, sid, confirm }) => {
       const system = await client.resolveSystem(sid);

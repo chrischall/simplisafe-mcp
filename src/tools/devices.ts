@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSensor, deviceTypeName, lockStateName } from '../normalize.js';
@@ -39,7 +39,7 @@ export function registerDeviceTools(server: McpServer, client: SimpliSafeClient)
         'smoke/CO, keypads, sirens and locks — with battery, offline and triggered status. ' +
         'Filter by type with `type_name` (e.g. "entry", "motion_v2", "lock").',
       annotations: toolAnnotations({ readOnly: true }),
-      inputSchema: {
+      inputSchema: z.object({
         ...sidArg,
         type_name: z
           .string()
@@ -53,7 +53,7 @@ export function registerDeviceTools(server: McpServer, client: SimpliSafeClient)
           .boolean()
           .optional()
           .describe('Ask the base station to re-poll its devices first (slower). Defaults to false.'),
-      },
+      }),
     },
     async ({ sid, type_name, problems_only, force_update }) => {
       const { systemId, sensors } = await fetchSensors(client, sid, force_update === true);
@@ -88,7 +88,7 @@ export function registerDeviceTools(server: McpServer, client: SimpliSafeClient)
         'simplisafe_set_lock_state takes. Polls the base station fresh by default, because a ' +
         'stale answer to "is my door locked?" is worse than a slow one.',
       annotations: toolAnnotations({ readOnly: true }),
-      inputSchema: {
+      inputSchema: z.object({
         ...sidArg,
         force_update: z
           .boolean()
@@ -97,7 +97,7 @@ export function registerDeviceTools(server: McpServer, client: SimpliSafeClient)
             'Re-poll the base station before answering. Defaults to TRUE for locks — set false ' +
               'to accept a possibly-stale cached reading in exchange for speed.',
           ),
-      },
+      }),
     },
     async ({ sid, force_update }) => {
       // Locks default to a FRESH poll, unlike the general sensor list. The
