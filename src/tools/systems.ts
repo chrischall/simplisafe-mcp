@@ -1,4 +1,5 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
@@ -18,7 +19,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
         'List the SimpliSafe systems on this account with their current alarm state (off/home/away), ' +
         'alarming status, connectivity and power status. Start here to get the `sid` other tools take.',
       annotations: toolAnnotations({ readOnly: true }),
-      inputSchema: {},
+      inputSchema: z.object({}),
     },
     async () => {
       const subs = await client.listSubscriptions();
@@ -34,7 +35,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
         'Get the current state of one SimpliSafe system: alarm state, whether it is alarming, ' +
         'base-station connectivity, power/battery status and any pending base-station messages.',
       annotations: toolAnnotations({ readOnly: true }),
-      inputSchema: { ...sidArg },
+      inputSchema: z.object({ ...sidArg }),
     },
     async ({ sid }) => {
       const system = await client.resolveSystem(sid);
@@ -56,7 +57,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
         'door chime, voice prompts, plus base-station health (wifi/cellular signal, wall power, ' +
         'backup battery, RF jamming). Does not include PINs — use simplisafe_get_pins for those.',
       annotations: toolAnnotations({ readOnly: true }),
-      inputSchema: { ...sidArg },
+      inputSchema: z.object({ ...sidArg }),
     },
     async ({ sid }) => {
       const system = await client.resolveSystem(sid);
@@ -92,10 +93,10 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
       // Not a mutation, but destructive-ish in the disclosure sense: the gate is
       // what keeps a casual "show me my settings" from spilling alarm codes.
       annotations: toolAnnotations({ readOnly: true }),
-      inputSchema: {
+      inputSchema: z.object({
         ...sidArg,
         confirm: schemaConfirm,
-      },
+      }),
     },
     async ({ sid, confirm }) => {
       const system = await client.resolveSystem(sid);

@@ -1,4 +1,5 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { messageOf, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { VERSION } from '../version.js';
@@ -12,7 +13,7 @@ export function registerUtilityTools(server: McpServer, client: SimpliSafeClient
         'the refresh token is configured and working, the resolved user id, and how many active ' +
         'systems the account has. Start here when other tools fail.',
       annotations: toolAnnotations({ readOnly: true }),
-      inputSchema: {},
+      inputSchema: z.object({}),
     },
     async () => {
       // Never throws: a healthcheck that fails to report is useless. It converts

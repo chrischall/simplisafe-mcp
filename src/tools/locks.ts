@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { McpToolError, PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { lockStateName } from '../normalize.js';
@@ -66,7 +66,7 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
         'gated even though it is technically reversible. After executing, the result is verified ' +
         'by re-reading the lock state.',
       annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true }),
-      inputSchema: {
+      inputSchema: z.object({
         serial: z
           .string()
           .min(1)
@@ -76,7 +76,7 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
           'System id. Optional when the account has exactly one system; required when it has several.',
         ),
         confirm: schemaConfirm,
-      },
+      }),
     },
     async ({ serial, state, sid, confirm }) => {
       const system = await client.resolveSystem(sid);
