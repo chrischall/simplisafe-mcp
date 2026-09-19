@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/chrischall/simplisafe-mcp/compare/v0.2.2...v1.0.0) (2026-09-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mcp:** migrate server to SDK v2 ([#66](https://github.com/chrischall/simplisafe-mcp/issues/66))
+
+### Features
+
+* **mcp:** migrate server to SDK v2 ([#66](https://github.com/chrischall/simplisafe-mcp/issues/66)) ([dba30fe](https://github.com/chrischall/simplisafe-mcp/commit/dba30fe87b9774dc1d105d21fa44488b1617c1b9))
+
 ## [0.2.2](https://github.com/chrischall/simplisafe-mcp/compare/v0.2.1...v0.2.2) (2026-09-15)
 
 
