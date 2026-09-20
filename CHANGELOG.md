@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/chrischall/simplisafe-mcp/compare/v1.0.0...v1.1.0) (2026-09-19)
+
+
+### Features
+
+* **deps:** take mcp-utils 1.0.0, booting through serveStdio ([#69](https://github.com/chrischall/simplisafe-mcp/issues/69)) ([623e622](https://github.com/chrischall/simplisafe-mcp/commit/623e622dff011db9f3a32913bca35049c1161b61))
+
 ## [1.0.0](https://github.com/chrischall/simplisafe-mcp/compare/v0.2.2...v1.0.0) (2026-09-19)
 
 
