@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/chrischall/simplisafe-mcp/compare/v1.1.0...v1.1.1) (2026-09-21)
+
+
+### Bug Fixes
+
+* **tools:** say that arming and unlocking are destructive ([#71](https://github.com/chrischall/simplisafe-mcp/issues/71)) ([5f975b0](https://github.com/chrischall/simplisafe-mcp/commit/5f975b03ace0c3ad9aad99c5640146b37fad7844))
+
 ## [1.1.0](https://github.com/chrischall/simplisafe-mcp/compare/v1.0.0...v1.1.0) (2026-09-19)
 
 
