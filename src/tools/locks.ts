@@ -65,7 +65,7 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
         'is sent and you get a dry-run preview. Unlocking physically opens a door lock, so it is ' +
         'gated even though it is technically reversible. After executing, the result is verified ' +
         'by re-reading the lock state.',
-      annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true }),
+      annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true, destructive: true }),
       inputSchema: z.object({
         serial: z
           .string()

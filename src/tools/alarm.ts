@@ -91,7 +91,7 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
         'dry-run preview. This physically changes a security system: disarming leaves the house ' +
         'unmonitored, and arming can trigger a siren and a monitoring-center dispatch. ' +
         'After executing, the new state is verified by re-reading the system.',
-      annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true }),
+      annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true, destructive: true }),
       inputSchema: z.object({
         state: z.enum(ALARM_STATES).describe('Target state: off (disarm), home, or away.'),
         sid: PositiveInt.optional().describe(
