@@ -90,9 +90,13 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
         'Read the system\'s user PINs (master, duress and named users). CONFIRM-GATED: these are ' +
         'the live alarm codes and are returned in cleartext, so calling this puts them into the ' +
         'conversation. Without confirm: true it returns a warning and fetches nothing.',
-      // Not a mutation, but destructive-ish in the disclosure sense: the gate is
-      // what keeps a casual "show me my settings" from spilling alarm codes.
-      annotations: toolAnnotations({ readOnly: true }),
+      // Not a mutation, but annotated as one on purpose. `confirm` is supplied
+      // by the model, so on its own it cannot stop a misread or prompt-injected
+      // call (sensor names and base-station messages are echoed back to the
+      // model) from spilling the duress PIN. Hosts commonly auto-approve
+      // read-only tools; readOnly: false + destructive: true makes them ask a
+      // human first, as they do for arm/disarm and unlock.
+      annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true, destructive: true }),
       inputSchema: z.object({
         ...sidArg,
         confirm: schemaConfirm,

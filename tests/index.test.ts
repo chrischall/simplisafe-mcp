@@ -44,7 +44,7 @@ describe('tool roster', () => {
     }
   });
 
-  it('marks exactly the two physical-control tools as non-read-only', async () => {
+  it('marks the physical-control tools and the cleartext-PIN read as non-read-only', async () => {
     const harness = await createTestHarness((server) => {
       for (const register of REGISTRARS) register(server, client);
     });
@@ -56,7 +56,13 @@ describe('tool roster', () => {
         .filter((t) => t.annotations?.readOnlyHint === false)
         .map((t) => t.name)
         .sort();
-      expect(writers).toEqual(['simplisafe_set_alarm_state', 'simplisafe_set_lock_state']);
+      // get_pins mutates nothing, but hosts auto-approve read-only tools, and the
+      // model-supplied `confirm` alone must not be what releases the duress PIN.
+      expect(writers).toEqual([
+        'simplisafe_get_pins',
+        'simplisafe_set_alarm_state',
+        'simplisafe_set_lock_state',
+      ]);
     } finally {
       await harness.close();
     }
