@@ -124,6 +124,26 @@ describe('simplisafe_set_alarm_state', () => {
     expect(parsed.verification).toBe('unconfirmed');
   });
 
+  it('reports unverified (not an error) when the post-write re-read fails', async () => {
+    // The command WAS sent. A transient failure re-reading state must not tell
+    // the model the disarm failed — it may then retry or misreport it.
+    resolveSpy
+      .mockResolvedValueOnce({ sid: 1, systemVersion: 3, raw: subscriptionFixture() })
+      .mockRejectedValueOnce(new Error('SimpliSafe API 503'));
+    writeSpy.mockResolvedValue({ ok: true } as never);
+
+    const result = await callWithTimers({ state: 'off', confirm: true });
+    expect(result.isError).toBeFalsy();
+    const parsed = parseToolResult(result) as Record<string, unknown>;
+
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    expect(parsed.verification).toBe('unverified');
+    expect(parsed.commandSent).toBe(true);
+    expect(String(parsed.detail)).toMatch(/was sent/i);
+    expect(String(parsed.detail)).toMatch(/SimpliSafe API 503/);
+    expect(parsed.response).toEqual({ ok: true });
+  });
+
   it('refuses on a non-SS3 system before sending anything', async () => {
     resolveSpy.mockResolvedValue({
       sid: 1,
