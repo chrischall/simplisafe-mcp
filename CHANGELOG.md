@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.2](https://github.com/chrischall/simplisafe-mcp/compare/v1.1.1...v1.1.2) (2026-09-23)
+
+
+### Bug Fixes
+
+* **deps:** bump dotenv from 17.4.2 to 18.0.1 ([#76](https://github.com/chrischall/simplisafe-mcp/issues/76)) ([0dc7c21](https://github.com/chrischall/simplisafe-mcp/commit/0dc7c21eec40ce7db8231fde9a0ead37a402dd45))
+* **deps:** bump zod in the production-dependencies group ([#75](https://github.com/chrischall/simplisafe-mcp/issues/75)) ([b972310](https://github.com/chrischall/simplisafe-mcp/commit/b972310f5c7fdf62a3213e6f385fd0fe96bed2b6))
+* **deps:** require zod ^4.6.5 to match @chrischall/mcp-utils 2.4.0 ([#79](https://github.com/chrischall/simplisafe-mcp/issues/79)) ([654c568](https://github.com/chrischall/simplisafe-mcp/commit/654c5687a6b569dec67a5a775086f662a45be19a))
+* **deps:** upgrade @chrischall/mcp-utils to 2.4.0 and @fetchproxy/* to 3.2.0 ([#78](https://github.com/chrischall/simplisafe-mcp/issues/78)) ([e3307ac](https://github.com/chrischall/simplisafe-mcp/commit/e3307acbc97248cabdd45a72a443858480ddf852))
+
 ## [1.1.1](https://github.com/chrischall/simplisafe-mcp/compare/v1.1.0...v1.1.1) (2026-09-21)
 
 
