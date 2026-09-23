@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/chrischall/simplisafe-mcp/compare/v1.1.2...v1.1.3) (2026-09-23)
+
+
+### Bug Fixes
+
+* harden SimpliSafe control verification, token cache and PIN disclosure (audit mediums) ([#80](https://github.com/chrischall/simplisafe-mcp/issues/80)) ([aa85292](https://github.com/chrischall/simplisafe-mcp/commit/aa852925866a28aad5ff8b38961be01454faa80d))
+
 ## [1.1.2](https://github.com/chrischall/simplisafe-mcp/compare/v1.1.1...v1.1.2) (2026-09-23)
 
 
