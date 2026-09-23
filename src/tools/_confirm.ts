@@ -36,3 +36,18 @@ export function previewUnlessConfirmed(
     note: 'Nothing was sent. Re-run with confirm: true to execute.',
   });
 }
+
+/**
+ * Detail text for a confirmed write whose post-write re-read failed.
+ *
+ * The command was already sent and may well have taken effect, so the result
+ * must say so unambiguously — a tool error here would read as "the unlock /
+ * disarm failed" and invite a retry or a wrong report to the user.
+ */
+export function unverifiedDetail(err: unknown, reReadTool: string): string {
+  const reason = err instanceof Error ? err.message : String(err);
+  return (
+    `The command WAS sent and accepted, but re-reading the state to verify it failed: ${reason}. ` +
+    `Do NOT assume it failed and do not simply retry — check the current state with ${reReadTool}.`
+  );
+}

@@ -117,6 +117,27 @@ describe('simplisafe_set_lock_state', () => {
     expect(parsed.verification).toBe('unconfirmed');
   });
 
+  it('reports unverified (not an error) when a verification poll fails after the write', async () => {
+    // The door may already be open. A 5xx/timeout on the re-read must not be
+    // surfaced as "failed to unlock".
+    requestSpy
+      .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never)
+      .mockRejectedValueOnce(new Error('SimpliSafe API timeout'));
+    writeSpy.mockResolvedValue({ ok: true } as never);
+
+    const result = await callWithTimers({ serial: 'L1', state: 'unlock', confirm: true });
+    expect(result.isError).toBeFalsy();
+    const parsed = parseToolResult(result) as Record<string, unknown>;
+
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    expect(requestSpy).toHaveBeenCalledTimes(2); // stops polling after the failure
+    expect(parsed.verification).toBe('unverified');
+    expect(parsed.commandSent).toBe(true);
+    expect(String(parsed.detail)).toMatch(/was sent/i);
+    expect(String(parsed.detail)).toMatch(/SimpliSafe API timeout/);
+    expect(parsed.previousState).toBe('locked');
+  });
+
   it('confirms a SLOW lock that only settles after several polls', async () => {
     // The regression this guards: a single 3s delay reported a successful live
     // unlock as `unconfirmed` because the bolt was still travelling.

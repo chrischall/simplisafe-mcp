@@ -67,6 +67,41 @@ describe('createTokenCache', () => {
     expect(readFileSync(cacheFile(dir), 'utf8')).not.toContain('seed-rt');
   });
 
+  it('never persists the env refresh token, even when it is the live one', () => {
+    // SimpliSafe does not rotate refresh tokens, so the record TokenManager
+    // saves normally carries the env seed itself. Writing it would put a second
+    // plaintext copy of a credential that can disarm the alarm on disk, undoing
+    // the .mcpb keychain storage. Only the short-lived access token is cached.
+    createTokenCache(on())!.save(tokens({ refreshToken: 'seed-rt' }));
+    const raw = readFileSync(cacheFile(dir), 'utf8');
+    expect(raw).not.toContain('seed-rt');
+    expect(raw).toContain('AT');
+  });
+
+  it('restores the env refresh token alongside the cached access token', () => {
+    const t = tokens({ refreshToken: 'seed-rt' });
+    createTokenCache(on())!.save(t);
+    expect(createTokenCache(on())!.load()).toEqual(t);
+  });
+
+  it('clear() discards the stored record', () => {
+    const p = createTokenCache(on())!;
+    p.save(tokens({ refreshToken: 'seed-rt' }));
+    p.clear();
+    expect(createTokenCache(on())!.load()).toBeNull();
+  });
+
+  it('scrubs a seed refresh token written by an older version on load', () => {
+    const p = createTokenCache(on())!;
+    p.save(tokens({ refreshToken: 'seed-rt' }));
+    const envelope = JSON.parse(readFileSync(cacheFile(dir), 'utf8')) as { state: Record<string, unknown> };
+    envelope.state.refreshToken = 'seed-rt';
+    writeFileSync(cacheFile(dir), JSON.stringify(envelope), { mode: 0o600 });
+
+    expect(createTokenCache(on())!.load()).toEqual(expect.objectContaining({ refreshToken: 'seed-rt' }));
+    expect(readFileSync(cacheFile(dir), 'utf8')).not.toContain('seed-rt');
+  });
+
   it.each([
     ['SIMPLISAFE_TOKEN_CACHE=false', on({ SIMPLISAFE_TOKEN_CACHE: 'false' })],
     ['no configured refresh token', { MCP_DATA_DIR: dir, SIMPLISAFE_TOKEN_CACHE: 'true' }],
@@ -84,8 +119,8 @@ describe('stored-record shape guard', () => {
   it.each([
     ['null', null],
     ['a primitive', 'nope'],
-    ['a missing refreshToken', { accessToken: 'AT', expiresAt: 1 }],
     ['an empty refreshToken', { accessToken: 'AT', refreshToken: '', expiresAt: 1 }],
+    ['a non-string refreshToken', { accessToken: 'AT', refreshToken: 7, expiresAt: 1 }],
     ['a missing accessToken', { refreshToken: 'RT', expiresAt: 1 }],
     ['a non-numeric expiry', { accessToken: 'AT', refreshToken: 'RT', expiresAt: 'soon' }],
   ])('rejects %s rather than handing it to the token manager', (_label, body) => {

@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
-import { previewUnlessConfirmed, schemaConfirm } from './_confirm.js';
+import { previewUnlessConfirmed, schemaConfirm, unverifiedDetail } from './_confirm.js';
 
 /** The three states the SS3 API accepts as a path segment. */
 const ALARM_STATES = ['off', 'home', 'away'] as const;
@@ -121,8 +121,24 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
       // A 2xx is not proof the state changed — re-read and compare the one field
       // that actually settles the question.
       await sleep(VERIFY_DELAY_MS);
-      const refreshed = await client.resolveSystem(system.sid);
-      const after = normalizeSystem(refreshed.raw);
+      let after: ReturnType<typeof normalizeSystem>;
+      try {
+        const refreshed = await client.resolveSystem(system.sid);
+        after = normalizeSystem(refreshed.raw);
+      } catch (err) {
+        // The write already succeeded. Reporting a failed RE-READ as a failed
+        // command would tell the model the house is still armed (or disarmed)
+        // when it may not be — so say plainly that the command went out.
+        return minifiedResult({
+          sid: system.sid,
+          requestedState: state.toUpperCase(),
+          previousState: before.alarmState,
+          commandSent: true,
+          verification: 'unverified',
+          detail: unverifiedDetail(err, 'simplisafe_get_system'),
+          response,
+        });
+      }
       const { verdict, detail } = classifyStateChange(state, before.alarmState, after.alarmState);
 
       return minifiedResult({

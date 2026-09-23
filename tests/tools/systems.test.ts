@@ -82,6 +82,19 @@ describe('system tools', () => {
 });
 
 describe('simplisafe_get_pins', () => {
+  it('is annotated so hosts ask a human before running it', async () => {
+    // `confirm: true` is model-supplied. Without a host approval prompt, a
+    // misread or prompt-injected call would put the duress PIN in the
+    // transcript — so this must not look read-only to an auto-approving host.
+    const { tools } = await harness.client.listTools();
+    const pins = tools.find((t) => t.name === 'simplisafe_get_pins');
+    expect(pins?.annotations).toMatchObject({
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    });
+  });
+
   it('fetches NOTHING without confirm: true', async () => {
     resolveSpy.mockResolvedValue({ sid: 1, systemVersion: 3, raw: subscriptionFixture() });
 

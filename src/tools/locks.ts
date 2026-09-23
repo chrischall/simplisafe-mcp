@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/server';
 import { McpToolError, PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { lockStateName } from '../normalize.js';
-import { previewUnlessConfirmed, schemaConfirm } from './_confirm.js';
+import { previewUnlessConfirmed, schemaConfirm, unverifiedDetail } from './_confirm.js';
 
 const LOCK_STATES = ['lock', 'unlock'] as const;
 type LockAction = (typeof LOCK_STATES)[number];
@@ -113,7 +113,25 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
       for (let attempt = 0; attempt < VERIFY_MAX_ATTEMPTS; attempt += 1) {
         await sleep(VERIFY_POLL_INTERVAL_MS);
         waitedMs += VERIFY_POLL_INTERVAL_MS;
-        const after = await findLock(client, system.sid, serial, true);
+        let after: Record<string, unknown>;
+        try {
+          after = await findLock(client, system.sid, serial, true);
+        } catch (err) {
+          // The write already went out — the door may already be open. A failed
+          // RE-READ must not be reported as a failed command.
+          return minifiedResult({
+            sid: system.sid,
+            serial,
+            lockName: name,
+            requested: state,
+            previousState: before,
+            commandSent: true,
+            verification: 'unverified',
+            verifiedAfterSeconds: waitedMs / 1000,
+            detail: unverifiedDetail(err, 'simplisafe_list_locks'),
+            response,
+          });
+        }
         afterState = lockStateName((after.status ?? {}) as Record<string, unknown>);
         // Both outcomes are terminal — stop rather than burning the full budget.
         if (afterState === expected || afterState === 'jammed') break;
