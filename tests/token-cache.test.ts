@@ -84,6 +84,13 @@ describe('createTokenCache', () => {
     expect(createTokenCache(on())!.load()).toEqual(t);
   });
 
+  it('clear() discards the stored record', () => {
+    const p = createTokenCache(on())!;
+    p.save(tokens({ refreshToken: 'seed-rt' }));
+    p.clear();
+    expect(createTokenCache(on())!.load()).toBeNull();
+  });
+
   it('scrubs a seed refresh token written by an older version on load', () => {
     const p = createTokenCache(on())!;
     p.save(tokens({ refreshToken: 'seed-rt' }));
