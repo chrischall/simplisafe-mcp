@@ -17,33 +17,48 @@ export function tokenCachePath(env: NodeJS.ProcessEnv = process.env): string {
   });
 }
 
-/** A usable record needs a refresh token — it is the only durable credential. */
-function isTokens(raw: unknown): raw is BearerTokens {
+/**
+ * What is actually written: the access token and its expiry, plus a refresh
+ * token ONLY when it differs from the env seed (i.e. SimpliSafe rotated it and
+ * the new one exists nowhere else). The env/keychain seed itself never touches
+ * disk.
+ */
+interface StoredTokens {
+  accessToken: string;
+  expiresAt: number;
+  refreshToken?: string;
+}
+
+function isStored(raw: unknown): raw is StoredTokens {
   if (raw === null || typeof raw !== 'object') return false;
-  const t = raw as Partial<BearerTokens>;
+  const t = raw as Partial<StoredTokens>;
   return (
     typeof t.accessToken === 'string' &&
-    typeof t.refreshToken === 'string' &&
-    t.refreshToken !== '' &&
-    typeof t.expiresAt === 'number'
+    typeof t.expiresAt === 'number' &&
+    // Absent means "the env seed". Present-but-empty or non-string is corrupt,
+    // and would leave the manager unable to refresh.
+    (t.refreshToken === undefined || (typeof t.refreshToken === 'string' && t.refreshToken !== ''))
   );
 }
 
 /**
  * The token cache, or `null` when disabled or unconfigured.
  *
- * This is a correctness fix more than an optimisation. SimpliSafe's exchange
- * can return a NEW refresh token, and the client already rotates onto it — but
- * only in memory. Every restart replayed the token from
- * `SIMPLISAFE_REFRESH_TOKEN` instead, so a rotation was discarded on exit. If
- * the service invalidates the old token when it issues a new one, that leaves
- * the server holding a dead credential and the operator re-running
- * `scripts/bootstrap-auth.mjs` — which is exactly what the 401 hint already
- * tells them to do.
+ * SimpliSafe does not rotate refresh tokens (verified live — see client.ts), so
+ * the refresh token TokenManager holds is the `SIMPLISAFE_REFRESH_TOKEN` seed
+ * itself. That seed can disarm the alarm and unlock doors indefinitely, and
+ * .mcpb installs keep it in the OS keychain; writing it to a plaintext file
+ * would silently undo that. So the cache stores only the short-lived access
+ * token and its expiry (saving one token exchange per restart), and re-attaches
+ * the seed from env on load.
+ *
+ * The one exception is a rotated refresh token: should SimpliSafe ever start
+ * rotating, the new token exists nowhere but memory, and dropping it on exit
+ * could strand the server. Only then is a refresh token written.
  *
  * `boundTo` is the env token, so re-running the bootstrap discards the cache
  * rather than letting a record minted from the old chain shadow the new one.
- * Only a salted digest is written.
+ * The binding is stored as a salted digest, never the token.
  */
 export function createTokenCache(
   env: NodeJS.ProcessEnv = process.env,
@@ -52,11 +67,45 @@ export function createTokenCache(
   const seed = readEnvVar('SIMPLISAFE_REFRESH_TOKEN', { env });
   if (seed === undefined) return null;
 
-  return createFileStatePersistence<BearerTokens>({
+  const file = createFileStatePersistence<StoredTokens>({
     filePath: tokenCachePath(env),
     boundTo: seed,
-    validate: (raw) => (isTokens(raw) ? raw : null),
+    validate: (raw) => (isStored(raw) ? raw : null),
   });
+
+  const toStored = (t: BearerTokens): StoredTokens => ({
+    accessToken: t.accessToken,
+    expiresAt: t.expiresAt,
+    ...(t.refreshToken !== seed ? { refreshToken: t.refreshToken } : {}),
+  });
+
+  return {
+    load(): BearerTokens | null {
+      const stored = file.load();
+      if (!stored) return null;
+      const tokens: BearerTokens = {
+        accessToken: stored.accessToken,
+        refreshToken: stored.refreshToken ?? seed,
+        expiresAt: stored.expiresAt,
+      };
+      if (stored.refreshToken === seed) {
+        // Written by an older version that persisted the seed verbatim. Scrub
+        // it; a failure here only leaves the old file as it was.
+        try {
+          file.save(toStored(tokens));
+        } catch {
+          /* best effort */
+        }
+      }
+      return tokens;
+    },
+    save(tokens: BearerTokens): void {
+      file.save(toStored(tokens));
+    },
+    clear(): void {
+      file.clear();
+    },
+  };
 }
 
 /**
