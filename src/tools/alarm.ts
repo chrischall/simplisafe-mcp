@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
-import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
+import { PositiveInt, confirmTokenParam, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
-import { previewUnlessConfirmed, schemaConfirm, unverifiedDetail } from './_confirm.js';
+import { confirmGate, unverifiedDetail } from './_confirm.js';
 
 /** The three states the SS3 API accepts as a path segment. */
 const ALARM_STATES = ['off', 'home', 'away'] as const;
@@ -87,9 +87,11 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
     {
       description:
         'Arm or disarm the alarm system: "off" (disarm), "home" (perimeter only) or "away" ' +
-        '(all sensors). CONFIRM-GATED — without confirm: true nothing is sent and you get a ' +
-        'dry-run preview. This physically changes a security system: disarming leaves the house ' +
-        'unmonitored, and arming can trigger a siren and a monitoring-center dispatch. ' +
+        '(all sensors). Asks the user to confirm first: a confirmation prompt where the client ' +
+        'supports one; otherwise the first call returns a preview and a confirmToken, and only a ' +
+        'repeat call with that token proceeds (see MCP_CONFIRM_MODE). This physically changes a ' +
+        'security system: disarming leaves the house unmonitored, and arming can trigger a siren ' +
+        'and a monitoring-center dispatch. ' +
         'After executing, the new state is verified by re-reading the system.',
       annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true, destructive: true }),
       inputSchema: z.object({
@@ -97,24 +99,34 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
         sid: PositiveInt.optional().describe(
           'System id. Optional when the account has exactly one system; required when it has several.',
         ),
-        confirm: schemaConfirm,
+        confirmToken: confirmTokenParam,
       }),
     },
-    async ({ state, sid, confirm }) => {
+    async ({ state, sid, confirmToken }, ctx) => {
       const system = await client.resolveSystem(sid);
       client.assertV3(system, 'Changing the alarm state');
 
       const before = normalizeSystem(system.raw);
       const path = `/ss3/subscriptions/${system.sid}/state/${state}`;
 
-      const preview = previewUnlessConfirmed(confirm, `set alarm state to ${state}`, 'POST', path, {
-        sid: system.sid,
-        locationName: before.locationName,
-        currentState: before.alarmState,
-        requestedState: state.toUpperCase(),
+      const gate = await confirmGate(ctx, {
+        tool: 'simplisafe_set_alarm_state',
+        action: 'alarm.set_state',
+        message: 'Review and confirm this alarm state change:',
+        summary: `set alarm state to ${state}`,
+        method: 'POST',
+        path,
+        target: String(system.sid),
+        context: {
+          sid: system.sid,
+          locationName: before.locationName,
+          currentState: before.alarmState,
+          requestedState: state.toUpperCase(),
+        },
         warning: STATE_EFFECT[state],
+        confirmToken,
       });
-      if (preview) return preview;
+      if (gate) return gate;
 
       const response = await client.write<Record<string, unknown>>(path);
 

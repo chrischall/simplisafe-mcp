@@ -61,7 +61,7 @@
     },
     {
       "name": "simplisafe_get_pins",
-      "description": "Read alarm PINs in cleartext (confirm-gated)"
+      "description": "Read alarm PINs in cleartext (asks you to confirm first)"
     },
     {
       "name": "simplisafe_list_sensors",
@@ -77,11 +77,11 @@
     },
     {
       "name": "simplisafe_set_alarm_state",
-      "description": "Arm (home/away) or disarm the system (confirm-gated)"
+      "description": "Arm (home/away) or disarm the system (asks you to confirm first)"
     },
     {
       "name": "simplisafe_set_lock_state",
-      "description": "Lock or unlock a smart lock (confirm-gated)"
+      "description": "Lock or unlock a smart lock (asks you to confirm first)"
     },
     {
       "name": "simplisafe_healthcheck",

@@ -75,3 +75,18 @@ export function entrySensorFixture(
     firmwareVersion: '2.13.10',
   };
 }
+
+/**
+ * The `confirmToken` a gated tool hands back on phase 1 of the confirm-token
+ * flow (a harness with no elicitation handler is a client that cannot be
+ * prompted, so it gets the preview-plus-token response). Throws if the result
+ * is not a phase-1 response, so a test never silently proceeds without one.
+ */
+export function confirmTokenOf(result: unknown): string {
+  const text = (result as { content?: { type: string; text?: string }[] }).content?.[0]?.text ?? '';
+  const parsed = JSON.parse(text) as { status?: string; confirmToken?: string };
+  if (typeof parsed.confirmToken !== 'string') {
+    throw new Error(`Expected a confirmation-required result with a confirmToken, got: ${text}`);
+  }
+  return parsed.confirmToken;
+}

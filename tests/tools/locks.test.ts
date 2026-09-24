@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { registerLockTools } from '../../src/tools/locks.js';
 import { client } from '../../src/client.js';
-import { createTestHarness, subscriptionFixture, lockSensorFixture } from '../helpers.js';
+import { createTestHarness, subscriptionFixture, lockSensorFixture, confirmTokenOf } from '../helpers.js';
 import { parseToolResult } from '@chrischall/mcp-utils/test';
 
 const resolveSpy = vi.spyOn(client, 'resolveSystem');
@@ -23,7 +23,7 @@ afterAll(async () => {
   if (harness) await harness.close();
 });
 
-/** Drive a confirmed call past the tool's post-write verification delay. */
+/** Drive a call past the tool's post-write verification polling. */
 async function callWithTimers(args: Record<string, unknown>) {
   vi.useFakeTimers();
   try {
@@ -35,6 +35,17 @@ async function callWithTimers(args: Record<string, unknown>) {
   }
 }
 
+/**
+ * Run both phases of the confirm-token flow. Each phase does its own fresh
+ * before-read, so a test mocks one lock read per phase ahead of the
+ * verification polls.
+ */
+async function confirmedCall(args: Record<string, unknown>) {
+  const phase1 = await harness.callTool('simplisafe_set_lock_state', args);
+  expect(writeSpy).not.toHaveBeenCalled();
+  return callWithTimers({ ...args, confirmToken: confirmTokenOf(phase1) });
+}
+
 describe('simplisafe_set_lock_state', () => {
   it('setup', async () => {
     harness = await createTestHarness((server) => registerLockTools(server, client));
@@ -42,16 +53,25 @@ describe('simplisafe_set_lock_state', () => {
     expect(names).toContain('simplisafe_set_lock_state');
   });
 
-  it('makes NO write without confirm: true', async () => {
+  it('phase 1 returns a preview and a token and makes NO write', async () => {
     requestSpy.mockResolvedValue({ sensors: [lockSensorFixture({ serial: 'L1' })] } as never);
 
     const parsed = parseToolResult(
       await harness.callTool('simplisafe_set_lock_state', { serial: 'L1', state: 'unlock' }),
     ) as Record<string, unknown>;
+    const preview = parsed.preview as Record<string, unknown>;
 
-    expect(parsed.dryRun).toBe(true);
-    expect(parsed.currentState).toBe('unlocked');
-    expect(String(parsed.warning)).toMatch(/physically UNLOCKS/i);
+    expect(parsed.status).toBe('confirmation-required');
+    expect(typeof parsed.confirmToken).toBe('string');
+    expect(preview).toMatchObject({
+      method: 'POST',
+      path: '/doorlock/7858153/L1/state',
+      willSend: { state: 'unlock' },
+      sid: 7858153,
+      lockName: 'Mudroom',
+      currentState: 'unlocked',
+    });
+    expect(String(preview.warning)).toMatch(/physically UNLOCKS/i);
     expect(writeSpy).not.toHaveBeenCalled();
   });
 
@@ -60,13 +80,14 @@ describe('simplisafe_set_lock_state', () => {
     // reported "restored to baseline" for a lock that had actually jammed.
     requestSpy
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never)
+      .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never)
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never);
     writeSpy.mockResolvedValue({ ok: true } as never);
 
-    await callWithTimers({ serial: 'L1', state: 'lock', confirm: true });
+    await confirmedCall({ serial: 'L1', state: 'lock' });
 
-    // 1 before-read + at least 1 verification read; every one of them fresh.
-    expect(requestSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+    // 1 before-read per phase + at least 1 verification read; every one fresh.
+    expect(requestSpy.mock.calls.length).toBeGreaterThanOrEqual(3);
     for (const call of requestSpy.mock.calls) {
       expect(call[2]).toEqual({ query: { forceUpdate: 'true' } });
     }
@@ -75,13 +96,15 @@ describe('simplisafe_set_lock_state', () => {
   it('posts the doorlock route with the action in the body', async () => {
     requestSpy
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never)
+      .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never)
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never);
     writeSpy.mockResolvedValue({ ok: true } as never);
 
     const parsed = parseToolResult(
-      await callWithTimers({ serial: 'L1', state: 'lock', confirm: true }),
+      await confirmedCall({ serial: 'L1', state: 'lock' }),
     ) as Record<string, unknown>;
 
+    expect(writeSpy).toHaveBeenCalledTimes(1);
     expect(writeSpy).toHaveBeenCalledWith('/doorlock/7858153/L1/state', { state: 'lock' });
     expect(parsed.previousState).toBe('unlocked');
     expect(parsed.currentState).toBe('locked');
@@ -91,13 +114,14 @@ describe('simplisafe_set_lock_state', () => {
   it('reports a jam distinctly instead of calling it success or plain failure', async () => {
     requestSpy
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never)
+      .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never)
       .mockResolvedValue({
         sensors: [lockSensorFixture({ serial: 'L1', lockJamState: 1 })],
       } as never);
     writeSpy.mockResolvedValue({ ok: true } as never);
 
     const parsed = parseToolResult(
-      await callWithTimers({ serial: 'L1', state: 'lock', confirm: true }),
+      await confirmedCall({ serial: 'L1', state: 'lock' }),
     ) as Record<string, unknown>;
 
     expect(parsed.verification).toBe('jammed');
@@ -107,11 +131,12 @@ describe('simplisafe_set_lock_state', () => {
   it('reports unconfirmed when the lock never moves, after exhausting the poll budget', async () => {
     requestSpy
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never)
+      .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never)
       .mockResolvedValue({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never);
     writeSpy.mockResolvedValue({ ok: true } as never);
 
     const parsed = parseToolResult(
-      await callWithTimers({ serial: 'L1', state: 'lock', confirm: true }),
+      await confirmedCall({ serial: 'L1', state: 'lock' }),
     ) as Record<string, unknown>;
 
     expect(parsed.verification).toBe('unconfirmed');
@@ -122,15 +147,16 @@ describe('simplisafe_set_lock_state', () => {
     // surfaced as "failed to unlock".
     requestSpy
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never)
+      .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never)
       .mockRejectedValueOnce(new Error('SimpliSafe API timeout'));
     writeSpy.mockResolvedValue({ ok: true } as never);
 
-    const result = await callWithTimers({ serial: 'L1', state: 'unlock', confirm: true });
+    const result = await confirmedCall({ serial: 'L1', state: 'unlock' });
     expect(result.isError).toBeFalsy();
     const parsed = parseToolResult(result) as Record<string, unknown>;
 
     expect(writeSpy).toHaveBeenCalledTimes(1);
-    expect(requestSpy).toHaveBeenCalledTimes(2); // stops polling after the failure
+    expect(requestSpy).toHaveBeenCalledTimes(3); // two before-reads, then stops polling after the failure
     expect(parsed.verification).toBe('unverified');
     expect(parsed.commandSent).toBe(true);
     expect(String(parsed.detail)).toMatch(/was sent/i);
@@ -145,11 +171,12 @@ describe('simplisafe_set_lock_state', () => {
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never)
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never)
       .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never)
+      .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never)
       .mockResolvedValue({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 2 })] } as never);
     writeSpy.mockResolvedValue({ ok: true } as never);
 
     const parsed = parseToolResult(
-      await callWithTimers({ serial: 'L1', state: 'unlock', confirm: true }),
+      await confirmedCall({ serial: 'L1', state: 'unlock' }),
     ) as Record<string, unknown>;
 
     expect(parsed.verification).toBe('confirmed');
@@ -162,10 +189,10 @@ describe('simplisafe_set_lock_state', () => {
       sensors: [lockSensorFixture({ serial: 'L1', name: 'Mudroom' })],
     } as never);
 
+    // Refused before the gate: an unknown serial never gets a preview or token.
     const result = await harness.callTool('simplisafe_set_lock_state', {
       serial: 'NOPE',
       state: 'unlock',
-      confirm: true,
     });
 
     expect(JSON.stringify(result)).toMatch(/No lock with serial .*NOPE.* on system 7858153/s);

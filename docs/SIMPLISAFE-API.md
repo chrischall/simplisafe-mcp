@@ -143,7 +143,7 @@ would flip every lock reading. `lockJamState` takes precedence over both.
 > every named user. It rides along in the same payload as the harmless settings,
 > so any projection of this endpoint must deliberately exclude it. In this server
 > `simplisafe_get_settings` projects `settings.normal` only, and the PIN block is
-> reachable solely through the separately confirm-gated `simplisafe_get_pins`.
+> reachable solely through `simplisafe_get_pins`, which asks the user to confirm first.
 
 ### `GET /v1/subscriptions/{sid}/events?numEvents=N&fromTimestamp=T`
 
@@ -275,7 +275,7 @@ on exactly that tool.
 | Auth: authorize, code exchange, refresh, rotation behaviour | **Verified live** |
 | All read endpoints above | **Verified live** through the built client |
 | `settings.pins` exclusion from `get_settings` | **Verified live** against the real payload |
-| Confirm gates (no request without `confirm: true`) | **Verified live** |
+| Confirm gates (no request before the user confirms) | **Unit-tested** — the confirm-token / prompt flow; the `confirm: true` gate it replaced was verified live, this one has not been re-run against a real system |
 | `POST .../state/{off,home,away}` | **Verified live** — `home` → `HOME`, `off` → `OFF`; returns `{"state":"HOME","stateUpdated":…,"exitDelay":0}` |
 | `POST /doorlock/.../state` | **Verified live** — `lock` → `locked`, `unlock` → `unlocked`, each confirmed ~5 s later. Returns **HTTP 200 with an empty body** (`content-length: 0`), so there is nothing to parse |
 | Arming auto-locks doors (`home`/`away` lock settings) | **Observed live** |
