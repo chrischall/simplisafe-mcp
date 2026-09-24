@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/chrischall/simplisafe-mcp/compare/v1.1.3...v1.2.0) (2026-09-24)
+
+
+### Features
+
+* confirm writes with a preview token instead of confirm: true ([#82](https://github.com/chrischall/simplisafe-mcp/issues/82)) ([ac0bf22](https://github.com/chrischall/simplisafe-mcp/commit/ac0bf229e3b3fd62c94d4a721385598f40d56bc4))
+
 ## [1.1.3](https://github.com/chrischall/simplisafe-mcp/compare/v1.1.2...v1.1.3) (2026-09-23)
 
 
