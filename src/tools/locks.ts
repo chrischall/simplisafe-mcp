@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
-import { McpToolError, PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
+import { McpToolError, PositiveInt, confirmTokenParam, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { lockStateName } from '../normalize.js';
-import { previewUnlessConfirmed, schemaConfirm, unverifiedDetail } from './_confirm.js';
+import { confirmGate, unverifiedDetail } from './_confirm.js';
 
 const LOCK_STATES = ['lock', 'unlock'] as const;
 type LockAction = (typeof LOCK_STATES)[number];
@@ -61,9 +61,11 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
     'simplisafe_set_lock_state',
     {
       description:
-        'Lock or unlock a SimpliSafe smart lock. CONFIRM-GATED — without confirm: true nothing ' +
-        'is sent and you get a dry-run preview. Unlocking physically opens a door lock, so it is ' +
-        'gated even though it is technically reversible. After executing, the result is verified ' +
+        'Lock or unlock a SimpliSafe smart lock. Asks the user to confirm first: a confirmation ' +
+        'prompt where the client supports one; otherwise the first call returns a preview and a ' +
+        'confirmToken, and only a repeat call with that token proceeds (see MCP_CONFIRM_MODE). ' +
+        'Unlocking physically opens a door lock, so it is gated even though it is technically ' +
+        'reversible. After executing, the result is verified ' +
         'by re-reading the lock state.',
       annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true, destructive: true }),
       inputSchema: z.object({
@@ -75,10 +77,10 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
         sid: PositiveInt.optional().describe(
           'System id. Optional when the account has exactly one system; required when it has several.',
         ),
-        confirm: schemaConfirm,
+        confirmToken: confirmTokenParam,
       }),
     },
-    async ({ serial, state, sid, confirm }) => {
+    async ({ serial, state, sid, confirmToken }, ctx) => {
       const system = await client.resolveSystem(sid);
       client.assertV3(system, 'Controlling locks');
 
@@ -91,17 +93,23 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
       const path = `/doorlock/${system.sid}/${serial}/state`;
       const body = { state };
 
-      const preview = previewUnlessConfirmed(confirm, `${state} the "${name}" lock`, 'POST', path, {
+      const gate = await confirmGate(ctx, {
+        tool: 'simplisafe_set_lock_state',
+        action: 'lock.set_state',
+        message: `Review and confirm: ${state} the "${name}" door.`,
+        summary: `${state} the "${name}" lock`,
+        method: 'POST',
+        path,
         body,
-        sid: system.sid,
-        lockName: name,
-        currentState: before,
+        target: serial,
+        context: { sid: system.sid, lockName: name, currentState: before },
         warning:
           state === 'unlock'
             ? `This physically UNLOCKS the "${name}" door, allowing entry.`
             : `This physically LOCKS the "${name}" door.`,
+        confirmToken,
       });
-      if (preview) return preview;
+      if (gate) return gate;
 
       const response = await client.write<Record<string, unknown>>(path, body);
 

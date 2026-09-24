@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { registerAlarmTools, classifyStateChange } from '../../src/tools/alarm.js';
 import { client } from '../../src/client.js';
-import { createTestHarness, subscriptionFixture } from '../helpers.js';
+import { createTestHarness, subscriptionFixture, confirmTokenOf } from '../helpers.js';
 import { parseToolResult } from '@chrischall/mcp-utils/test';
 
 const resolveSpy = vi.spyOn(client, 'resolveSystem');
@@ -17,7 +17,7 @@ afterAll(async () => {
   if (harness) await harness.close();
 });
 
-/** Drive a confirmed call past the tool's post-write verification delay. */
+/** Drive a call past the tool's post-write verification delay. */
 async function callWithTimers(args: Record<string, unknown>) {
   vi.useFakeTimers();
   try {
@@ -27,6 +27,18 @@ async function callWithTimers(args: Record<string, unknown>) {
   } finally {
     vi.useRealTimers();
   }
+}
+
+/**
+ * Run both phases of the confirm-token flow: phase 1 (no token) for the preview
+ * and token, then phase 2 with that token, past the verification delay. Each
+ * phase reads the system once, so a test mocks one read per phase before the
+ * verification re-read.
+ */
+async function confirmedCall(args: Record<string, unknown>) {
+  const phase1 = await harness.callTool('simplisafe_set_alarm_state', args);
+  expect(writeSpy).not.toHaveBeenCalled();
+  return callWithTimers({ ...args, confirmToken: confirmTokenOf(phase1) });
 }
 
 describe('classifyStateChange', () => {
@@ -62,36 +74,45 @@ describe('simplisafe_set_alarm_state', () => {
     expect(names).toContain('simplisafe_set_alarm_state');
   });
 
-  it('makes NO network call without confirm: true', async () => {
+  it('phase 1 returns a preview and a token and makes NO write', async () => {
     resolveSpy.mockResolvedValue({ sid: 7858153, systemVersion: 3, raw: subscriptionFixture() });
 
     const result = await harness.callTool('simplisafe_set_alarm_state', { state: 'away' });
     const parsed = parseToolResult(result) as Record<string, unknown>;
+    const preview = parsed.preview as Record<string, unknown>;
 
-    expect(parsed.dryRun).toBe(true);
-    expect(parsed.requestedState).toBe('AWAY');
-    expect(parsed.currentState).toBe('OFF');
+    expect(parsed.status).toBe('confirmation-required');
+    expect(typeof parsed.confirmToken).toBe('string');
+    expect(preview).toMatchObject({
+      method: 'POST',
+      path: '/ss3/subscriptions/7858153/state/away',
+      sid: 7858153,
+      requestedState: 'AWAY',
+      currentState: 'OFF',
+    });
     // The load-bearing assertion: the gate is what prevents a hallucinated call
     // from arming a real house.
     expect(writeSpy).not.toHaveBeenCalled();
   });
 
-  it('warns about the physical consequence in the dry run', async () => {
+  it('warns about the physical consequence in the preview', async () => {
     resolveSpy.mockResolvedValue({ sid: 1, systemVersion: 3, raw: subscriptionFixture() });
 
     const off = parseToolResult(
       await harness.callTool('simplisafe_set_alarm_state', { state: 'off' }),
-    ) as Record<string, string>;
-    expect(off.warning).toMatch(/unmonitored/i);
+    ) as { preview: Record<string, string> };
+    expect(off.preview.warning).toMatch(/unmonitored/i);
 
     const away = parseToolResult(
       await harness.callTool('simplisafe_set_alarm_state', { state: 'away' }),
-    ) as Record<string, string>;
-    expect(away.warning).toMatch(/dispatch/i);
+    ) as { preview: Record<string, string> };
+    expect(away.preview.warning).toMatch(/dispatch/i);
+    expect(writeSpy).not.toHaveBeenCalled();
   });
 
-  it('posts to the ss3 state route and verifies by re-reading', async () => {
+  it('phase 2 posts to the ss3 state route once and verifies by re-reading', async () => {
     resolveSpy
+      .mockResolvedValueOnce({ sid: 7858153, systemVersion: 3, raw: subscriptionFixture() })
       .mockResolvedValueOnce({ sid: 7858153, systemVersion: 3, raw: subscriptionFixture() })
       .mockResolvedValueOnce({
         sid: 7858153,
@@ -101,9 +122,10 @@ describe('simplisafe_set_alarm_state', () => {
     writeSpy.mockResolvedValue({ ok: true } as never);
 
     const parsed = parseToolResult(
-      await callWithTimers({ state: 'away', confirm: true }),
+      await confirmedCall({ state: 'away' }),
     ) as Record<string, unknown>;
 
+    expect(writeSpy).toHaveBeenCalledTimes(1);
     expect(writeSpy).toHaveBeenCalledWith('/ss3/subscriptions/7858153/state/away');
     expect(parsed.previousState).toBe('OFF');
     expect(parsed.currentState).toBe('AWAY_COUNT');
@@ -112,13 +134,11 @@ describe('simplisafe_set_alarm_state', () => {
 
   it('reports unconfirmed when the system does not actually move', async () => {
     // A 2xx that changed nothing must NOT read as success.
-    resolveSpy
-      .mockResolvedValueOnce({ sid: 1, systemVersion: 3, raw: subscriptionFixture() })
-      .mockResolvedValueOnce({ sid: 1, systemVersion: 3, raw: subscriptionFixture() });
+    resolveSpy.mockResolvedValue({ sid: 1, systemVersion: 3, raw: subscriptionFixture() });
     writeSpy.mockResolvedValue({ ok: true } as never);
 
     const parsed = parseToolResult(
-      await callWithTimers({ state: 'home', confirm: true }),
+      await confirmedCall({ state: 'home' }),
     ) as Record<string, unknown>;
 
     expect(parsed.verification).toBe('unconfirmed');
@@ -129,10 +149,11 @@ describe('simplisafe_set_alarm_state', () => {
     // the model the disarm failed — it may then retry or misreport it.
     resolveSpy
       .mockResolvedValueOnce({ sid: 1, systemVersion: 3, raw: subscriptionFixture() })
+      .mockResolvedValueOnce({ sid: 1, systemVersion: 3, raw: subscriptionFixture() })
       .mockRejectedValueOnce(new Error('SimpliSafe API 503'));
     writeSpy.mockResolvedValue({ ok: true } as never);
 
-    const result = await callWithTimers({ state: 'off', confirm: true });
+    const result = await confirmedCall({ state: 'off' });
     expect(result.isError).toBeFalsy();
     const parsed = parseToolResult(result) as Record<string, unknown>;
 
@@ -151,19 +172,15 @@ describe('simplisafe_set_alarm_state', () => {
       raw: subscriptionFixture({ version: 2 }),
     });
 
-    const result = await harness.callTool('simplisafe_set_alarm_state', {
-      state: 'off',
-      confirm: true,
-    });
+    // Refused before the gate: no preview, no token, nothing to confirm.
+    const result = await harness.callTool('simplisafe_set_alarm_state', { state: 'off' });
     expect(JSON.stringify(result)).toMatch(/requires a SimpliSafe 3 system/);
+    expect(JSON.stringify(result)).not.toContain('confirmToken');
     expect(writeSpy).not.toHaveBeenCalled();
   });
 
   it('rejects a state outside the accepted enum', async () => {
-    const result = await harness.callTool('simplisafe_set_alarm_state', {
-      state: 'panic',
-      confirm: true,
-    });
+    const result = await harness.callTool('simplisafe_set_alarm_state', { state: 'panic' });
     expect(result.isError).toBe(true);
     expect(writeSpy).not.toHaveBeenCalled();
   });

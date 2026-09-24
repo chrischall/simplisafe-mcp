@@ -56,8 +56,8 @@ describe('tool roster', () => {
         .filter((t) => t.annotations?.readOnlyHint === false)
         .map((t) => t.name)
         .sort();
-      // get_pins mutates nothing, but hosts auto-approve read-only tools, and the
-      // model-supplied `confirm` alone must not be what releases the duress PIN.
+      // get_pins mutates nothing, but hosts auto-approve read-only tools, and a
+      // model-held confirmToken alone must not be what releases the duress PIN.
       expect(writers).toEqual([
         'simplisafe_get_pins',
         'simplisafe_set_alarm_state',
@@ -68,17 +68,20 @@ describe('tool roster', () => {
     }
   });
 
-  it('gates every tool that writes or discloses secrets behind `confirm`', async () => {
+  it('gates every tool that writes or discloses secrets behind a confirmation', async () => {
     const harness = await createTestHarness((server) => {
       for (const register of REGISTRARS) register(server, client);
     });
     try {
       const { tools } = await harness.client.listTools();
       const gated = tools
-        .filter((t) => 'confirm' in ((t.inputSchema?.properties ?? {}) as object))
+        .filter((t) => 'confirmToken' in ((t.inputSchema?.properties ?? {}) as object))
         .map((t) => t.name)
         .sort();
-      // The two physical-control tools plus the cleartext-PIN read.
+      // The two physical-control tools plus the cleartext-PIN read — and none of
+      // them still takes the retired `confirm` flag.
+      const legacy = tools.filter((t) => 'confirm' in ((t.inputSchema?.properties ?? {}) as object));
+      expect(legacy).toEqual([]);
       expect(gated).toEqual([
         'simplisafe_get_pins',
         'simplisafe_set_alarm_state',

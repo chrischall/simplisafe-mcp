@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
-import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
+import { PositiveInt, confirmTokenParam, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
-import { previewUnlessConfirmed, schemaConfirm } from './_confirm.js';
+import { confirmGate } from './_confirm.js';
 
 const sidArg = {
   sid: PositiveInt.optional().describe(
@@ -87,34 +87,45 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
     'simplisafe_get_pins',
     {
       description:
-        'Read the system\'s user PINs (master, duress and named users). CONFIRM-GATED: these are ' +
-        'the live alarm codes and are returned in cleartext, so calling this puts them into the ' +
-        'conversation. Without confirm: true it returns a warning and fetches nothing.',
-      // Not a mutation, but annotated as one on purpose. `confirm` is supplied
-      // by the model, so on its own it cannot stop a misread or prompt-injected
-      // call (sensor names and base-station messages are echoed back to the
-      // model) from spilling the duress PIN. Hosts commonly auto-approve
+        'Read the system\'s user PINs (master, duress and named users). These are the live alarm ' +
+        'codes and are returned in cleartext, so calling this puts them into the conversation. ' +
+        'Asks the user to confirm first: a confirmation prompt where the client supports one; ' +
+        'otherwise the first call returns a warning preview and a confirmToken and fetches nothing, ' +
+        'and only a repeat call with that token proceeds (see MCP_CONFIRM_MODE).',
+      // Not a mutation, but annotated as one on purpose. On a client that
+      // cannot show a confirmation prompt the confirmToken passes through the
+      // model, so on its own it cannot stop a misread or prompt-injected call
+      // (sensor names and base-station messages are echoed back to the model)
+      // from spilling the duress PIN. Hosts commonly auto-approve
       // read-only tools; readOnly: false + destructive: true makes them ask a
       // human first, as they do for arm/disarm and unlock.
       annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true, destructive: true }),
       inputSchema: z.object({
         ...sidArg,
-        confirm: schemaConfirm,
+        confirmToken: confirmTokenParam,
       }),
     },
-    async ({ sid, confirm }) => {
+    async ({ sid, confirmToken }, ctx) => {
       const system = await client.resolveSystem(sid);
       client.assertV3(system, 'Reading PINs');
 
       const path = `/ss3/subscriptions/${system.sid}/settings/normal`;
-      const preview = previewUnlessConfirmed(confirm, 'read alarm PINs', 'GET', path, {
-        sid: system.sid,
+      const gate = await confirmGate(ctx, {
+        tool: 'simplisafe_get_pins',
+        action: 'pins.read',
+        message: 'Review and confirm revealing your alarm PINs:',
+        summary: 'read alarm PINs',
+        method: 'GET',
+        path,
+        target: String(system.sid),
+        context: { sid: system.sid },
+        confirmToken,
         warning:
           'This returns your SimpliSafe alarm PINs IN CLEARTEXT — the master PIN, the duress ' +
           'PIN and every named user PIN. They will appear in this conversation and in any ' +
           'transcript or log that retains it. Only confirm if you want the codes themselves.',
       });
-      if (preview) return preview;
+      if (gate) return gate;
 
       const res = await client.request<{
         settings?: { pins?: Record<string, unknown> };

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { registerSystemTools } from '../../src/tools/systems.js';
 import { client } from '../../src/client.js';
-import { createTestHarness, subscriptionFixture } from '../helpers.js';
+import { createTestHarness, subscriptionFixture, confirmTokenOf } from '../helpers.js';
 import { parseToolResult } from '@chrischall/mcp-utils/test';
 
 const listSpy = vi.spyOn(client, 'listSubscriptions');
@@ -83,8 +83,9 @@ describe('system tools', () => {
 
 describe('simplisafe_get_pins', () => {
   it('is annotated so hosts ask a human before running it', async () => {
-    // `confirm: true` is model-supplied. Without a host approval prompt, a
-    // misread or prompt-injected call would put the duress PIN in the
+    // On a client that cannot show a confirmation prompt, the confirmToken is
+    // handed to the model. Without a host approval prompt, a misread or
+    // prompt-injected call could replay it and put the duress PIN in the
     // transcript — so this must not look read-only to an auto-approving host.
     const { tools } = await harness.client.listTools();
     const pins = tools.find((t) => t.name === 'simplisafe_get_pins');
@@ -95,26 +96,35 @@ describe('simplisafe_get_pins', () => {
     });
   });
 
-  it('fetches NOTHING without confirm: true', async () => {
+  it('phase 1 fetches NOTHING and returns a warning preview and a token', async () => {
     resolveSpy.mockResolvedValue({ sid: 1, systemVersion: 3, raw: subscriptionFixture() });
 
     const result = await harness.callTool('simplisafe_get_pins');
     const parsed = parseToolResult(result) as Record<string, unknown>;
+    const preview = parsed.preview as Record<string, unknown>;
 
-    expect(parsed.dryRun).toBe(true);
-    expect(String(parsed.warning)).toMatch(/CLEARTEXT/i);
+    expect(parsed.status).toBe('confirmation-required');
+    expect(typeof parsed.confirmToken).toBe('string');
+    expect(preview).toMatchObject({
+      method: 'GET',
+      path: '/ss3/subscriptions/1/settings/normal',
+      sid: 1,
+    });
+    expect(String(preview.warning)).toMatch(/CLEARTEXT/i);
     // No request means no codes were pulled into the transcript.
     expect(requestSpy).not.toHaveBeenCalled();
   });
 
-  it('returns the pins once explicitly confirmed', async () => {
+  it('phase 2 returns the pins, fetching exactly once', async () => {
     resolveSpy.mockResolvedValue({ sid: 1, systemVersion: 3, raw: subscriptionFixture() });
     requestSpy.mockResolvedValue({
       settings: { pins: { master: { pin: '1234' }, users: [{ name: 'Kid', pin: '5678' }] } },
     } as never);
 
+    const confirmToken = confirmTokenOf(await harness.callTool('simplisafe_get_pins'));
+    expect(requestSpy).not.toHaveBeenCalled();
     const parsed = parseToolResult(
-      await harness.callTool('simplisafe_get_pins', { confirm: true }),
+      await harness.callTool('simplisafe_get_pins', { confirmToken }),
     ) as Record<string, unknown>;
 
     expect(parsed.pins).toMatchObject({ master: { pin: '1234' } });
