@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.0...v1.2.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **deps:** bump dotenv in the production-dependencies group ([#85](https://github.com/chrischall/simplisafe-mcp/issues/85)) ([a4d7846](https://github.com/chrischall/simplisafe-mcp/commit/a4d7846d953fcd5d30c43600f339b2f3e4d09b17))
+
 ## [1.2.0](https://github.com/chrischall/simplisafe-mcp/compare/v1.1.3...v1.2.0) (2026-09-24)
 
 
