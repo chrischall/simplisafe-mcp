@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.1...v1.2.2) (2026-09-29)
+
+
+### Bug Fixes
+
+* **deps:** bump the production-dependencies group with 3 updates ([#89](https://github.com/chrischall/simplisafe-mcp/issues/89)) ([1884f5c](https://github.com/chrischall/simplisafe-mcp/commit/1884f5c10f23f4877cebb57aab682aa307d38061))
+
 ## [1.2.1](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.0...v1.2.1) (2026-09-24)
 
 
