@@ -1,5 +1,5 @@
 import type { CallToolResult, InputRequiredResult, ServerContext } from '@modelcontextprotocol/server';
-import { confirmationFromEnv, requireConfirmationWithFallback } from '@chrischall/mcp-utils';
+import { confirmationFromEnv, requireConfirmationWithFallback, withCallSignal } from '@chrischall/mcp-utils';
 
 /** What {@link confirmGate} needs to describe and bind one sensitive call. */
 export interface GatedRequest {
@@ -85,6 +85,46 @@ export function unverifiedDetail(err: unknown, reReadTool: string): string {
   const reason = err instanceof Error ? err.message : String(err);
   return (
     `The command WAS sent and accepted, but re-reading the state to verify it failed: ${reason}. ` +
+    `Do NOT assume it failed and do not simply retry — check the current state with ${reReadTool}.`
+  );
+}
+
+/**
+ * Run one post-write re-read under `verifyAfterWrite`'s per-read signal.
+ *
+ * The signal fires at the verification deadline or on the caller's
+ * cancellation. Making it the ambient call signal lets the API client abort
+ * the in-flight request; racing it as well bounds a read that ignores it.
+ */
+export function readUnder<T>(signal: AbortSignal, read: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    if (signal.aborted) return reject(signal.reason);
+    const onAbort = () => reject(signal.reason);
+    signal.addEventListener('abort', onAbort, { once: true });
+    withCallSignal(signal, read).then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort);
+        resolve(value);
+      },
+      (err: unknown) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(err);
+      },
+    );
+  });
+}
+
+/**
+ * Detail for a verification that produced no answer: the deadline passed or
+ * the caller cancelled before any re-read came back.
+ */
+export function noAnswerDetail(outcome: 'timeout' | 'cancelled', reReadTool: string): string {
+  const why =
+    outcome === 'cancelled'
+      ? 'the request was cancelled before the state could be re-read'
+      : 're-reading the state did not answer before the verification deadline';
+  return (
+    `The command WAS sent and accepted, but ${why}. ` +
     `Do NOT assume it failed and do not simply retry — check the current state with ${reReadTool}.`
   );
 }

@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
-import { PositiveInt, confirmTokenParam, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
+import { PositiveInt, confirmTokenParam, minifiedResult, toolAnnotations, verifyAfterWrite } from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
-import { confirmGate, unverifiedDetail } from './_confirm.js';
+import { confirmGate, noAnswerDetail, readUnder, unverifiedDetail } from './_confirm.js';
 
 /** The three states the SS3 API accepts as a path segment. */
 const ALARM_STATES = ['off', 'home', 'away'] as const;
@@ -41,8 +41,8 @@ const STATE_EFFECT: Record<AlarmState, string> = {
  * asynchronously, so an immediate re-read can still report the old value.
  */
 const VERIFY_DELAY_MS = 2500;
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/** Hard bound on the delay plus the single re-read. */
+const VERIFY_TIMEOUT_MS = 12_500;
 
 /**
  * Compare the requested state against what the system actually reports afterward.
@@ -130,14 +130,17 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
 
       const response = await client.write<Record<string, unknown>>(path);
 
-      // A 2xx is not proof the state changed — re-read and compare the one field
-      // that actually settles the question.
-      await sleep(VERIFY_DELAY_MS);
-      let after: ReturnType<typeof normalizeSystem>;
-      try {
-        const refreshed = await client.resolveSystem(system.sid);
-        after = normalizeSystem(refreshed.raw);
-      } catch (err) {
+      // A 2xx is not proof the state changed — re-read once and compare the one
+      // field that actually settles the question. Bounded, so a hung re-read
+      // cannot hold the tool call open.
+      const check = await verifyAfterWrite({
+        read: (signal) =>
+          readUnder(signal, async () => normalizeSystem((await client.resolveSystem(system.sid)).raw)),
+        isSettled: () => true,
+        initialDelayMs: VERIFY_DELAY_MS,
+        timeoutMs: VERIFY_TIMEOUT_MS,
+      });
+      if (check.outcome !== 'settled' || check.snapshot === undefined) {
         // The write already succeeded. Reporting a failed RE-READ as a failed
         // command would tell the model the house is still armed (or disarmed)
         // when it may not be — so say plainly that the command went out.
@@ -147,10 +150,14 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
           previousState: before.alarmState,
           commandSent: true,
           verification: 'unverified',
-          detail: unverifiedDetail(err, 'simplisafe_get_system'),
+          detail:
+            check.outcome === 'read_failed'
+              ? unverifiedDetail(check.error, 'simplisafe_get_system')
+              : noAnswerDetail(check.outcome === 'cancelled' ? 'cancelled' : 'timeout', 'simplisafe_get_system'),
           response,
         });
       }
+      const after = check.snapshot;
       const { verdict, detail } = classifyStateChange(state, before.alarmState, after.alarmState);
 
       return minifiedResult({

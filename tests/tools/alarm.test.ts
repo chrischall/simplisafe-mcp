@@ -22,7 +22,7 @@ async function callWithTimers(args: Record<string, unknown>) {
   vi.useFakeTimers();
   try {
     const pending = harness.callTool('simplisafe_set_alarm_state', args);
-    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(20000); // past the delay and the verification bound
     return await pending;
   } finally {
     vi.useRealTimers();
@@ -163,6 +163,22 @@ describe('simplisafe_set_alarm_state', () => {
     expect(String(parsed.detail)).toMatch(/was sent/i);
     expect(String(parsed.detail)).toMatch(/SimpliSafe API 503/);
     expect(parsed.response).toEqual({ ok: true });
+  });
+
+  it('bounds a post-write re-read that never answers, reporting unverified', async () => {
+    resolveSpy
+      .mockResolvedValueOnce({ sid: 1, systemVersion: 3, raw: subscriptionFixture() })
+      .mockResolvedValueOnce({ sid: 1, systemVersion: 3, raw: subscriptionFixture() })
+      .mockReturnValueOnce(new Promise(() => {}) as never);
+    writeSpy.mockResolvedValue({ ok: true } as never);
+
+    const result = await confirmedCall({ state: 'off' });
+    expect(result.isError).toBeFalsy();
+    const parsed = parseToolResult(result) as Record<string, unknown>;
+
+    expect(parsed.verification).toBe('unverified');
+    expect(parsed.commandSent).toBe(true);
+    expect(String(parsed.detail)).toMatch(/did not answer/i);
   });
 
   it('refuses on a non-SS3 system before sending anything', async () => {
