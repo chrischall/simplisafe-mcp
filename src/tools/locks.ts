@@ -1,9 +1,16 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
-import { McpToolError, PositiveInt, confirmTokenParam, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
+import {
+  McpToolError,
+  PositiveInt,
+  confirmTokenParam,
+  minifiedResult,
+  toolAnnotations,
+  verifyAfterWrite,
+} from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
 import { lockStateName } from '../normalize.js';
-import { confirmGate, unverifiedDetail } from './_confirm.js';
+import { confirmGate, noAnswerDetail, readUnder, unverifiedDetail } from './_confirm.js';
 
 const LOCK_STATES = ['lock', 'unlock'] as const;
 type LockAction = (typeof LOCK_STATES)[number];
@@ -19,8 +26,11 @@ const EXPECTED_AFTER: Record<LockAction, string> = { lock: 'locked', unlock: 'un
  * as soon as the answer is known.
  */
 const VERIFY_POLL_INTERVAL_MS = 2500;
-const VERIFY_MAX_ATTEMPTS = 6; // ~15s worst case
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * Hard bound on the whole verification, hung reads included (fleet-audit#1117):
+ * room for six polls at the interval above, ~15s, as before.
+ */
+const VERIFY_TIMEOUT_MS = 16_000;
 
 /**
  * Fetch one lock's raw record by serial, or throw with the available serials.
@@ -114,36 +124,41 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
       const response = await client.write<Record<string, unknown>>(path, body);
 
       // Re-read rather than trusting the 2xx, polling until the bolt settles.
+      // Both outcomes are terminal — stop rather than burning the full budget.
       const expected = EXPECTED_AFTER[state];
-      let afterState = before;
-      let waitedMs = 0;
+      const check = await verifyAfterWrite({
+        read: (signal) =>
+          readUnder(signal, async () => {
+            const after = await findLock(client, system.sid, serial, true);
+            return lockStateName((after.status ?? {}) as Record<string, unknown>);
+          }),
+        isSettled: (s) => s === expected || s === 'jammed',
+        initialDelayMs: VERIFY_POLL_INTERVAL_MS,
+        intervalMs: VERIFY_POLL_INTERVAL_MS,
+        timeoutMs: VERIFY_TIMEOUT_MS,
+      });
+      const waitedMs = check.elapsedMs;
 
-      for (let attempt = 0; attempt < VERIFY_MAX_ATTEMPTS; attempt += 1) {
-        await sleep(VERIFY_POLL_INTERVAL_MS);
-        waitedMs += VERIFY_POLL_INTERVAL_MS;
-        let after: Record<string, unknown>;
-        try {
-          after = await findLock(client, system.sid, serial, true);
-        } catch (err) {
-          // The write already went out — the door may already be open. A failed
-          // RE-READ must not be reported as a failed command.
-          return minifiedResult({
-            sid: system.sid,
-            serial,
-            lockName: name,
-            requested: state,
-            previousState: before,
-            commandSent: true,
-            verification: 'unverified',
-            verifiedAfterSeconds: waitedMs / 1000,
-            detail: unverifiedDetail(err, 'simplisafe_list_locks'),
-            response,
-          });
-        }
-        afterState = lockStateName((after.status ?? {}) as Record<string, unknown>);
-        // Both outcomes are terminal — stop rather than burning the full budget.
-        if (afterState === expected || afterState === 'jammed') break;
+      // The write already went out — the door may already be open. A failed or
+      // missing RE-READ must not be reported as a failed command.
+      if (check.outcome === 'read_failed' || check.outcome === 'cancelled' || check.snapshot === undefined) {
+        return minifiedResult({
+          sid: system.sid,
+          serial,
+          lockName: name,
+          requested: state,
+          previousState: before,
+          commandSent: true,
+          verification: 'unverified',
+          verifiedAfterSeconds: waitedMs / 1000,
+          detail:
+            check.outcome === 'read_failed'
+              ? unverifiedDetail(check.error, 'simplisafe_list_locks')
+              : noAnswerDetail(check.outcome === 'cancelled' ? 'cancelled' : 'timeout', 'simplisafe_list_locks'),
+          response,
+        });
       }
+      const afterState = check.snapshot;
 
       let verification: 'confirmed' | 'jammed' | 'unconfirmed';
       let detail: string;

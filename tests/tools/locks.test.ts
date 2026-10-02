@@ -164,6 +164,26 @@ describe('simplisafe_set_lock_state', () => {
     expect(parsed.previousState).toBe('locked');
   });
 
+  it('bounds a verification re-read that never answers, reporting unverified (fleet-audit#1117)', async () => {
+    // The door may already be open; a hung poll must neither hang the tool call
+    // nor read as a failed command.
+    requestSpy
+      .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never)
+      .mockResolvedValueOnce({ sensors: [lockSensorFixture({ serial: 'L1', lockState: 1 })] } as never)
+      .mockReturnValue(new Promise(() => {}) as never);
+    writeSpy.mockResolvedValue({ ok: true } as never);
+
+    const result = await confirmedCall({ serial: 'L1', state: 'unlock' });
+    expect(result.isError).toBeFalsy();
+    const parsed = parseToolResult(result) as Record<string, unknown>;
+
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    expect(parsed.verification).toBe('unverified');
+    expect(parsed.commandSent).toBe(true);
+    expect(String(parsed.detail)).toMatch(/was sent/i);
+    expect(String(parsed.detail)).toMatch(/did not answer/i);
+  });
+
   it('confirms a SLOW lock that only settles after several polls', async () => {
     // The regression this guards: a single 3s delay reported a successful live
     // unlock as `unconfirmed` because the bolt was still travelling.

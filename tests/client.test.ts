@@ -158,6 +158,22 @@ describe('token refresh', () => {
     expect(headers.get('authorization')).toBe('Bearer minted-access');
   });
 
+  it('bounds the token exchange with a signal, outside createApiClient\'s budget (fleet-audit#1117)', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: unknown) => {
+      if (String(input).includes('/oauth/token')) {
+        return new Response(JSON.stringify({ access_token: 'minted-access', expires_in: 3600 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ userId: 7 }), { status: 200 });
+    });
+
+    await new SimpliSafeClient({ refreshToken: 'rt-abc' }).getUserId();
+
+    const tokenCall = fetchSpy.mock.calls.find((c) => String(c[0]).includes('/oauth/token'));
+    const signal = (tokenCall![1] as RequestInit).signal;
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal!.aborted).toBe(false);
+  });
+
   it('surfaces an actionable error when the refresh token has been revoked', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(

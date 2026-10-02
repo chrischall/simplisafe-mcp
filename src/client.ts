@@ -6,6 +6,7 @@ import {
   createApiClient,
   McpToolError,
   truncateErrorMessage,
+  withAmbientCancellation,
   type ApiClient,
 } from '@chrischall/mcp-utils';
 import { TokenManager } from '@chrischall/mcp-utils/session';
@@ -25,6 +26,8 @@ try {
 
 const API_BASE_URL = 'https://api.simplisafe.com/v1';
 const AUTH_TOKEN_URL = 'https://auth.simplisafe.com/oauth/token';
+/** Same budget createApiClient gives every API call. */
+const TOKEN_EXCHANGE_TIMEOUT_MS = 30_000;
 const SERVICE_NAME = 'SimpliSafe';
 
 /**
@@ -144,7 +147,10 @@ export class SimpliSafeClient {
 
   /** Exchange the refresh token for a fresh access token. */
   private async exchangeRefreshToken(refreshToken: string) {
+    // Outside createApiClient, so its 30s budget does not apply: bound it here,
+    // and honour the caller's cancellation (fleet-audit#1117).
     const res = await fetch(AUTH_TOKEN_URL, {
+      signal: withAmbientCancellation(AbortSignal.timeout(TOKEN_EXCHANGE_TIMEOUT_MS)),
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
