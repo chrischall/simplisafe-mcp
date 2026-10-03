@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.3](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.2...v1.2.3) (2026-10-03)
+
+
+### Bug Fixes
+
+* **deps:** adopt @chrischall/mcp-utils 2.12.0 verifyAfterWrite for lock and alarm checks ([#95](https://github.com/chrischall/simplisafe-mcp/issues/95)) ([31f6723](https://github.com/chrischall/simplisafe-mcp/commit/31f672369be4fee59ccc69d0c985a7479c88ec7b))
+* **deps:** bump @chrischall/mcp-utils to 2.13.0 ([#96](https://github.com/chrischall/simplisafe-mcp/issues/96)) ([24f38c2](https://github.com/chrischall/simplisafe-mcp/commit/24f38c2ca5853b34bec5d03c9c7acf63f90ae43f))
+* keep credentials and report edge_blocked on CDN/WAF blocks (mcp-utils 2.10.0) ([#93](https://github.com/chrischall/simplisafe-mcp/issues/93)) ([1f1ca85](https://github.com/chrischall/simplisafe-mcp/commit/1f1ca85a36c0877c32c2eed464dbe4f4c74b461c))
+* keep write approvals valid across a hosted restart (mcp-utils 2.11.0) ([#94](https://github.com/chrischall/simplisafe-mcp/issues/94)) ([c076656](https://github.com/chrischall/simplisafe-mcp/commit/c0766568f0adfc806dd553daaeecbc40f120a7b1))
+* report CDN/WAF blocks as edge_blocked, not a rejected credential (mcp-utils 2.9.0) ([#91](https://github.com/chrischall/simplisafe-mcp/issues/91)) ([958cea5](https://github.com/chrischall/simplisafe-mcp/commit/958cea5f5ea04d91466f2ee77ce6a5bd3b3e7fa6))
+
 ## [1.2.2](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.1...v1.2.2) (2026-09-29)
 
 
