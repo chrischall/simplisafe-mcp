@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.3...v1.2.4) (2026-10-05)
+
+
+### Bug Fixes
+
+* **deps:** require @chrischall/mcp-utils 2.14.0 and MCP SDK 2.3.0 ([#97](https://github.com/chrischall/simplisafe-mcp/issues/97)) ([a18d84b](https://github.com/chrischall/simplisafe-mcp/commit/a18d84bccb076672675eefe61defc2170d23ed5d))
+
 ## [1.2.3](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.2...v1.2.3) (2026-10-03)
 
 
