@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.3.0](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.4...v1.3.0) (2026-10-07)
+
+
+### Features
+
+* **deps:** support MCP_CONFIRM_ELICITATION=off for clients that never show confirm prompts (mcp-utils 2.15.0) ([#104](https://github.com/chrischall/simplisafe-mcp/issues/104)) ([940cb68](https://github.com/chrischall/simplisafe-mcp/commit/940cb68b2a6794893efc8c3ebb20d62dca5aa3ff))
+
+
+### Bug Fixes
+
+* **deps:** bump dotenv ([#101](https://github.com/chrischall/simplisafe-mcp/issues/101)) ([d2257d2](https://github.com/chrischall/simplisafe-mcp/commit/d2257d2d1615f846b47bc85e4ee1758183b58435))
+
+
+### Documentation
+
+* document MCP_CONFIRM_ELICITATION ([#105](https://github.com/chrischall/simplisafe-mcp/issues/105)) ([793220f](https://github.com/chrischall/simplisafe-mcp/commit/793220f819b96abec1458a8ac7287f8d0a4e1b4a))
+
 ## [1.2.4](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.3...v1.2.4) (2026-10-05)
 
 
