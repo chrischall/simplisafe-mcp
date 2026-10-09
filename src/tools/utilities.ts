@@ -12,7 +12,7 @@ export function registerUtilityTools(server: McpServer, client: SimpliSafeClient
         'Check that the server can authenticate to SimpliSafe and reach the API. Reports whether ' +
         'the refresh token is configured and working, the resolved user id, and how many active ' +
         'systems the account has. Start here when other tools fail.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({}),
     },
     async () => {

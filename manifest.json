@@ -33,7 +33,9 @@
         "${__dirname}/dist/bundle.js"
       ],
       "env": {
-        "SIMPLISAFE_REFRESH_TOKEN": "${user_config.simplisafe_refresh_token}"
+        "SIMPLISAFE_REFRESH_TOKEN": "${user_config.simplisafe_refresh_token}",
+        "SIMPLISAFE_TOKEN_CACHE": "${user_config.simplisafe_token_cache}",
+        "SIMPLISAFE_TOKEN_FILE": "${user_config.simplisafe_token_file}"
       }
     }
   },
@@ -44,6 +46,19 @@
       "description": "Minted by the one-time browser login: run `node scripts/bootstrap-auth.mjs` in the repo and follow its two steps. SimpliSafe issues no API keys, so this token is the credential.",
       "required": true,
       "sensitive": true
+    },
+    "simplisafe_token_cache": {
+      "type": "boolean",
+      "title": "Cache tokens on disk (optional)",
+      "description": "Set to false to disable the on-disk token cache and re-authenticate on every process start. Defaults to enabled.",
+      "required": false,
+      "default": true
+    },
+    "simplisafe_token_file": {
+      "type": "string",
+      "title": "Token cache file (optional)",
+      "description": "Absolute path for the token cache file. Defaults to $MCP_DATA_DIR/.simplisafe-mcp/token.json.",
+      "required": false
     }
   },
   "tools": [

@@ -18,7 +18,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
       description:
         'List the SimpliSafe systems on this account with their current alarm state (off/home/away), ' +
         'alarming status, connectivity and power status. Start here to get the `sid` other tools take.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({}),
     },
     async () => {
@@ -34,7 +34,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
       description:
         'Get the current state of one SimpliSafe system: alarm state, whether it is alarming, ' +
         'base-station connectivity, power/battery status and any pending base-station messages.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({ ...sidArg }),
     },
     async ({ sid }) => {
@@ -56,7 +56,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
         'Get base-station settings for a system: entry/exit delays, alarm volume and duration, ' +
         'door chime, voice prompts, plus base-station health (wifi/cellular signal, wall power, ' +
         'backup battery, RF jamming). Does not include PINs — use simplisafe_get_pins for those.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({ ...sidArg }),
     },
     async ({ sid }) => {
