@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -130,5 +130,23 @@ describe('client + token cache, wired together', () => {
 
     expect(tokenCalls(spy)).toHaveLength(1);
     expect(existsSync(process.env.SIMPLISAFE_TOKEN_FILE!)).toBe(false);
+  });
+
+  it('keeps working, and says so on stderr, when the cache cannot be written', async () => {
+    // A regular file where the cache directory should be: every write fails
+    // with ENOTDIR, the shape of a read-only HOME or a bad SIMPLISAFE_TOKEN_FILE.
+    const blocker = join(dir, 'not-a-dir');
+    writeFileSync(blocker, '');
+    process.env.SIMPLISAFE_TOKEN_FILE = join(blocker, 'token.json');
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const spy = stubFetch();
+
+    // No rotation means nothing is lost: the call must succeed on the
+    // in-memory token rather than fail on a write that buys nothing.
+    await expect(new SimpliSafeClient().getUserId()).resolves.toBe(42);
+    expect(tokenCalls(spy)).toHaveLength(1);
+    expect(err.mock.calls.map((c) => String(c[0])).join('\n')).toMatch(
+      /\[simplisafe-mcp\] could not cache/,
+    );
   });
 });

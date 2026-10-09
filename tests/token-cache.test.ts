@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync, writeFileSync, statSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { tokenCachePath, createTokenCache, failOnCacheWriteError } from '../src/token-cache.js';
+import { tokenCachePath, createTokenCache, reportCacheWriteFailure } from '../src/token-cache.js';
 
 let dir: string;
 beforeEach(() => {
@@ -139,26 +139,27 @@ describe('stored-record shape guard', () => {
   });
 });
 
-describe('failOnCacheWriteError', () => {
-  it('throws, rather than reporting, when a rotated token cannot be stored', () => {
-    // Deliberately unlike the other adoptions: if SimpliSafe invalidates the
-    // previous token when it issues a new one, silently losing the new one
-    // leaves the server with no usable credential.
-    expect(() => failOnCacheWriteError(new Error('EROFS'))).toThrow(/could not persist/i);
-  });
+describe('reportCacheWriteFailure', () => {
+  afterEach(() => vi.restoreAllMocks());
 
-  it('names both ways out in the hint', () => {
-    try {
-      failOnCacheWriteError(new Error('EROFS'));
-      expect.unreachable('should have thrown');
-    } catch (err) {
-      const hint = (err as { hint?: string }).hint ?? '';
-      expect(hint).toContain('SIMPLISAFE_TOKEN_FILE');
-      expect(hint).toContain('SIMPLISAFE_TOKEN_CACHE=false');
-    }
+  it('reports, rather than throws, when the cache cannot be written', () => {
+    // SimpliSafe does not rotate refresh tokens, so the seed in env is always
+    // the live credential: a lost write costs the next start one token
+    // exchange, never access. Failing the tool call would buy nothing.
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => reportCacheWriteFailure(new Error('EROFS'))).not.toThrow();
+    expect(err).toHaveBeenCalledTimes(1);
+    const line = String(err.mock.calls[0]![0]);
+    expect(line).toContain('[simplisafe-mcp]');
+    expect(line).toContain('EROFS');
+    // Names the knobs, so a read-only data dir is fixable from the log alone.
+    expect(line).toContain('SIMPLISAFE_TOKEN_FILE');
+    expect(line).toContain('SIMPLISAFE_TOKEN_CACHE=false');
   });
 
   it('renders a non-Error cause', () => {
-    expect(() => failOnCacheWriteError('disk gone')).toThrow(/disk gone/);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    reportCacheWriteFailure('disk gone');
+    expect(String(err.mock.calls[0]![0])).toContain('disk gone');
   });
 });

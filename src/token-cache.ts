@@ -5,7 +5,6 @@ import {
   type SyncStatePersistence,
 } from '@chrischall/mcp-utils/session';
 import { readEnvVar, parseBoolEnv } from '@chrischall/mcp-utils';
-import { McpToolError } from '@chrischall/mcp-utils';
 
 /** Where the token pair is cached between runs. */
 export function tokenCachePath(env: NodeJS.ProcessEnv = process.env): string {
@@ -109,26 +108,27 @@ export function createTokenCache(
 }
 
 /**
- * Fail the call when a rotated token cannot be stored.
+ * Report a cache write that failed. Not fatal, which is TokenManager's default
+ * stance too: SimpliSafe does not rotate refresh tokens (verified live — see
+ * client.ts), so the `SIMPLISAFE_REFRESH_TOKEN` seed in env is always the live
+ * credential and a lost write costs the next start one token exchange, never
+ * access. Failing the tool call instead would turn a read-only data dir or a bad
+ * `SIMPLISAFE_TOKEN_FILE` into a server that errors on its first call and on
+ * every hourly refresh after it, while protecting nothing.
  *
- * Deliberately fatal, unlike the other adoptions in this rollout, and the
- * reasoning is an asymmetry rather than a certainty. I could not confirm
- * whether SimpliSafe's rotation invalidates the previous token without live
- * credentials. If it does, a silent write failure means the next start replays
- * a dead token and the operator has to re-run the bootstrap by hand; if it does
- * not, the cost of failing loudly is one errored tool call pointing at a data
- * directory that is genuinely broken and worth fixing either way.
+ * Should SimpliSafe ever start rotating, the rotated token is the one write
+ * that matters — this line is then the signal to fix the store before the
+ * process exits. Worth saying either way: a broken store otherwise looks
+ * exactly like a server that never caches.
  *
- * The cheap wrong answer and the expensive wrong answer are not symmetric, so
- * this takes the cheap one.
+ * stderr only; stdout is the JSON-RPC channel.
  */
-export function failOnCacheWriteError(err: unknown): never {
+export function reportCacheWriteFailure(err: unknown): void {
   const detail = err instanceof Error ? err.message : String(err);
-  throw new McpToolError(`Refreshed the SimpliSafe token but could not persist it: ${detail}`, {
-    hint:
-      'SimpliSafe may have invalidated the previous refresh token when it issued this one, ' +
-      'so losing the new one can leave the server without a usable credential. Fix the ' +
-      'token store path/permissions (SIMPLISAFE_TOKEN_FILE), or set ' +
-      'SIMPLISAFE_TOKEN_CACHE=false to accept re-running scripts/bootstrap-auth.mjs instead.',
-  });
+  console.error(
+    `[simplisafe-mcp] could not cache the SimpliSafe access token (${detail}); continuing ` +
+      'without the cache — every restart will exchange the refresh token again until the ' +
+      'store path/permissions (SIMPLISAFE_TOKEN_FILE) are fixed, or set ' +
+      'SIMPLISAFE_TOKEN_CACHE=false to silence this.',
+  );
 }

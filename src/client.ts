@@ -10,7 +10,7 @@ import {
   type ApiClient,
 } from '@chrischall/mcp-utils';
 import { TokenManager } from '@chrischall/mcp-utils/session';
-import { createTokenCache, failOnCacheWriteError } from './token-cache.js';
+import { createTokenCache, reportCacheWriteFailure } from './token-cache.js';
 
 // Load .env for local dev; silently skip if dotenv is unavailable (e.g. the
 // .mcpb bundle). The try/catch guards a non-Node runtime, where
@@ -118,9 +118,10 @@ export class SimpliSafeClient {
         // burns a second call against a token the service has likely revoked.
         // Without this the revoked-token path exchanged twice.
         isRefreshRevoked: () => false,
-        // Fatal rather than reported — see failOnCacheWriteError for why the
-        // asymmetry favours failing loudly here.
-        onPersistError: failOnCacheWriteError,
+        // Reported, never fatal: with no rotation the env seed is always the
+        // live credential, so a lost write loses nothing — see
+        // reportCacheWriteFailure.
+        onPersistError: reportCacheWriteFailure,
       });
     }
 
