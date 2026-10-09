@@ -12,7 +12,7 @@ export function registerEventTools(server: McpServer, client: SimpliSafeClient):
         'Get recent events recorded by the base station — arm/disarm, sensor opens, lock and ' +
         'unlock, alarms, errors — newest first. Each event carries an ISO timestamp alongside ' +
         'the raw epoch seconds.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({
         sid: PositiveInt.optional().describe(
           'System id. Optional when the account has exactly one system; required when it has several.',

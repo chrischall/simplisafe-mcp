@@ -2,7 +2,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import {
   loadDotenvSafely,
-  readEnvVar,
+  requireEnvVar,
   createApiClient,
   McpToolError,
   truncateErrorMessage,
@@ -58,6 +58,20 @@ export interface SimpliSafeSystemSummary {
 }
 
 /**
+ * SIMPLISAFE_REFRESH_TOKEN is required — no tool works without it — so it is
+ * read with requireEnvVar. The throw is swallowed here only so the constructor
+ * can defer it to the first tool call (see below), keeping the install-time
+ * tools/list probe working on a server that has no token yet.
+ */
+function envRefreshToken(): string | undefined {
+  try {
+    return requireEnvVar('SIMPLISAFE_REFRESH_TOKEN');
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Client for the SimpliSafe cloud API.
  *
  * Auth is a one-time browser OAuth2/PKCE bootstrap (`scripts/bootstrap-auth.mjs`)
@@ -87,7 +101,7 @@ export class SimpliSafeClient {
    * fails startup validation rather than a request.
    */
   constructor(opts?: { refreshToken?: string }) {
-    const token = opts?.refreshToken ?? readEnvVar('SIMPLISAFE_REFRESH_TOKEN');
+    const token = opts?.refreshToken ?? envRefreshToken();
 
     if (!token) {
       this.refreshToken = null;

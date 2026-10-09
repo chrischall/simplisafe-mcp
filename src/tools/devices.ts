@@ -38,7 +38,7 @@ export function registerDeviceTools(server: McpServer, client: SimpliSafeClient)
         'List the sensors and devices paired to a system — entry sensors, motion, glass break, ' +
         'smoke/CO, keypads, sirens and locks — with battery, offline and triggered status. ' +
         'Filter by type with `type_name` (e.g. "entry", "motion_v2", "lock").',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({
         ...sidArg,
         type_name: z
@@ -87,7 +87,7 @@ export function registerDeviceTools(server: McpServer, client: SimpliSafeClient)
         'lock and keypad battery status, and keypad connectivity. Returns the `serial` that ' +
         'simplisafe_set_lock_state takes. Polls the base station fresh by default, because a ' +
         'stale answer to "is my door locked?" is worse than a slow one.',
-      annotations: toolAnnotations({ readOnly: true }),
+      annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({
         ...sidArg,
         force_update: z
