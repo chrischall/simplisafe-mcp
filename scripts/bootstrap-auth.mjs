@@ -17,8 +17,8 @@
  */
 
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync, existsSync, unlinkSync, chmodSync, realpathSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -36,6 +36,17 @@ const SCOPE =
   'offline_access email openid https://api.simplisafe.com/scopes/user:platform';
 const AUTH0_CLIENT =
   'eyJ2ZXJzaW9uIjoiMi4zLjIiLCJuYW1lIjoiQXV0aDAuc3dpZnQiLCJlbnYiOnsic3dpZnQiOiI1LngiLCJpT1MiOiIxNi4zIn19';
+
+/**
+ * Write a secret-bearing file and guarantee it ends up 0600. writeFileSync's
+ * `mode` only applies when it CREATES the file, so a pre-existing .env (say,
+ * `cp .env.example .env` under a 0644 umask) would otherwise keep holding the
+ * refresh token world-readable. chmod after the write re-asserts it.
+ */
+export function writePrivateFile(file, data) {
+  writeFileSync(file, data, { mode: 0o600 });
+  chmodSync(file, 0o600);
+}
 
 function codeVerifier() {
   return randomBytes(40).toString('base64url').replace(/[^a-zA-Z0-9]/g, '');
@@ -66,9 +77,7 @@ function printUrl() {
     scope: SCOPE,
   });
 
-  writeFileSync(STATE_FILE, JSON.stringify({ verifier, deviceId }, null, 2), {
-    mode: 0o600,
-  });
+  writePrivateFile(STATE_FILE, JSON.stringify({ verifier, deviceId }, null, 2));
 
   process.stdout.write(`
 SimpliSafe login — step 1 of 2
@@ -170,7 +179,7 @@ async function exchange(rawInput) {
     );
   kept.push(`SIMPLISAFE_REFRESH_TOKEN=${tokens.refresh_token}`);
   kept.push(`SIMPLISAFE_USER_ID=${userId}`);
-  writeFileSync(ENV_FILE, `${kept.join('\n')}\n`, { mode: 0o600 });
+  writePrivateFile(ENV_FILE, `${kept.join('\n')}\n`);
 
   unlinkSync(STATE_FILE);
 
@@ -185,14 +194,20 @@ The browser is no longer needed. .env is gitignored — never commit it.
 `);
 }
 
-const [, , arg] = process.argv;
-try {
-  if (arg) {
-    await exchange(arg);
-  } else {
-    printUrl();
+// Only run the CLI when executed directly — importing (e.g. from tests) must
+// not print a login URL or write bootstrap state into the repo.
+const isMain =
+  process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+if (isMain) {
+  const [, , arg] = process.argv;
+  try {
+    if (arg) {
+      await exchange(arg);
+    } else {
+      printUrl();
+    }
+  } catch (err) {
+    process.stderr.write(`\nError: ${err.message}\n`);
+    process.exitCode = 1;
   }
-} catch (err) {
-  process.stderr.write(`\nError: ${err.message}\n`);
-  process.exitCode = 1;
 }
