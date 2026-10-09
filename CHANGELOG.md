@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.1](https://github.com/chrischall/simplisafe-mcp/compare/v1.3.0...v1.3.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* annotate tools truthfully and sync manifests with the served tools ([#110](https://github.com/chrischall/simplisafe-mcp/issues/110)) ([dca79b6](https://github.com/chrischall/simplisafe-mcp/commit/dca79b6ac558d95bca6803b71b7cdf25c5d7cd2c))
+* **auth:** keep .env at 0600 when bootstrap-auth writes into an existing file ([#106](https://github.com/chrischall/simplisafe-mcp/issues/106)) ([ddbadde](https://github.com/chrischall/simplisafe-mcp/commit/ddbadde9bba66eaaf6231d44f99d5690a24a40ae))
+* **auth:** report token cache write failures instead of failing the tool call ([#108](https://github.com/chrischall/simplisafe-mcp/issues/108)) ([caf7343](https://github.com/chrischall/simplisafe-mcp/commit/caf734342ba0511f337f326fbe0c557ae63fe318))
+* declare the plugin MCP config under the mcpServers key Claude Code reads ([#111](https://github.com/chrischall/simplisafe-mcp/issues/111)) ([4af8f4a](https://github.com/chrischall/simplisafe-mcp/commit/4af8f4a9ed7aebf6dc49708ef0317a0fe6039234))
+* **deps:** update @chrischall/mcp-utils to 3.0.0 ([#109](https://github.com/chrischall/simplisafe-mcp/issues/109)) ([c2ee1ca](https://github.com/chrischall/simplisafe-mcp/commit/c2ee1caa5afd9ed191e07f4deda7c221e6d70814))
+
 ## [1.3.0](https://github.com/chrischall/simplisafe-mcp/compare/v1.2.4...v1.3.0) (2026-10-07)
 
 
