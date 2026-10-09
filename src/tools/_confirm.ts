@@ -25,6 +25,12 @@ export interface GatedRequest {
   context: Record<string, unknown>;
   /** The physical consequence, spelled out. Shown, not bound. */
   warning: string;
+  /**
+   * The tool's arguments as received, minus `confirmToken`. Bound into both
+   * the token and the elicitation acceptance, so a confirmation for one set of
+   * arguments cannot authorise another.
+   */
+  args: Record<string, unknown>;
   /** The phase-2 token from the tool input, or undefined on phase 1. */
   confirmToken?: string;
 }
@@ -64,6 +70,9 @@ export function confirmGate(
       message: req.message,
       details: preview,
       tool: req.tool,
+      // Single-account server: one set of SimpliSafe credentials per process.
+      account: undefined,
+      args: req.args,
       confirmToken: req.confirmToken,
       subject: () => ({
         target: req.target,

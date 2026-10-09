@@ -119,6 +119,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
         path,
         target: String(system.sid),
         context: { sid: system.sid },
+        args: { sid },
         confirmToken,
         warning:
           'This returns your SimpliSafe alarm PINs IN CLEARTEXT — the master PIN, the duress ' +

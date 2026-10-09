@@ -124,6 +124,7 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
           requestedState: state.toUpperCase(),
         },
         warning: STATE_EFFECT[state],
+        args: { state, sid },
         confirmToken,
       });
       if (gate) return gate;

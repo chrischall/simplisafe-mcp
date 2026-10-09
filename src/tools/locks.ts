@@ -117,6 +117,7 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
           state === 'unlock'
             ? `This physically UNLOCKS the "${name}" door, allowing entry.`
             : `This physically LOCKS the "${name}" door.`,
+        args: { serial, state, sid },
         confirmToken,
       });
       if (gate) return gate;
