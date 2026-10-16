@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/chrischall/simplisafe-mcp/compare/v1.3.1...v1.3.2) (2026-10-16)
+
+
+### Bug Fixes
+
+* **deps:** bump the production-dependencies group with 4 updates ([#112](https://github.com/chrischall/simplisafe-mcp/issues/112)) ([9e3d3ef](https://github.com/chrischall/simplisafe-mcp/commit/9e3d3ef06f280faba4bd7dda7f529fe08681ce0e))
+* **plugin:** launch the published package so marketplace installs start ([#115](https://github.com/chrischall/simplisafe-mcp/issues/115)) ([1489e3b](https://github.com/chrischall/simplisafe-mcp/commit/1489e3b99d52a738fa31f9fa98f080ff81d637a1))
+
 ## [1.3.1](https://github.com/chrischall/simplisafe-mcp/compare/v1.3.0...v1.3.1) (2026-10-09)
 
 
