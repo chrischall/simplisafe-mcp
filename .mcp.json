@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "simplisafe": {
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "simplisafe-mcp"],
       "env": {
         "SIMPLISAFE_REFRESH_TOKEN": "${SIMPLISAFE_REFRESH_TOKEN}"
       }
