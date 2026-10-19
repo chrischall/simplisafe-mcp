@@ -4,6 +4,13 @@ slug: simplisafe
 summary: >-
   SimpliSafe home security for Claude — check system state and sensors,
   review events, arm/disarm, and control smart locks
+examples:
+  - prompt: Is my SimpliSafe system armed right now, and are all the doors locked?
+    note: Reads alarm state and polls the smart locks fresh
+  - prompt: Do any of my sensors have a low battery, or are any of them offline?
+    note: Filters the sensor list to devices with problems
+  - prompt: What happened on my alarm system overnight? List the arm, disarm and door events.
+    note: Reads the base station's recent event log
 env:
   - name: SIMPLISAFE_REFRESH_TOKEN
     secret: true
