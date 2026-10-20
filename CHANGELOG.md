@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.3](https://github.com/chrischall/simplisafe-mcp/compare/v1.3.2...v1.3.3) (2026-10-20)
+
+
+### Bug Fixes
+
+* **deps:** bump the production-dependencies group with 3 updates ([#121](https://github.com/chrischall/simplisafe-mcp/issues/121)) ([767f830](https://github.com/chrischall/simplisafe-mcp/commit/767f830758bda8038fc69026b1f4f5a9833a20e1))
+
+
+### Documentation
+
+* **mint:** add sample prompts for the public catalog ([#118](https://github.com/chrischall/simplisafe-mcp/issues/118)) ([67c43dc](https://github.com/chrischall/simplisafe-mcp/commit/67c43dc474ce00997a0f5a23179fde22772e604e))
+
 ## [1.3.2](https://github.com/chrischall/simplisafe-mcp/compare/v1.3.1...v1.3.2) (2026-10-16)
 
 
