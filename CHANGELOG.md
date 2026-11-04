@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.4.0](https://github.com/chrischall/simplisafe-mcp/compare/v1.3.2...v1.4.0) (2026-11-04)
+
+
+### Features
+
+* context-group hints ([#126](https://github.com/chrischall/simplisafe-mcp/issues/126)) ([3016dda](https://github.com/chrischall/simplisafe-mcp/commit/3016dda6574aab4ff657e897d43de9cef6f0e92a))
+
+
+### Bug Fixes
+
+* **brief:** align the brief view with the fleet contract ([#127](https://github.com/chrischall/simplisafe-mcp/issues/127)) ([a986ea5](https://github.com/chrischall/simplisafe-mcp/commit/a986ea5905982b03d105895b04f927ac16cc7a2e))
+* **deps:** bump @chrischall/mcp-utils ([#125](https://github.com/chrischall/simplisafe-mcp/issues/125)) ([5b4795e](https://github.com/chrischall/simplisafe-mcp/commit/5b4795e605b2a3d18e47b26bcaaa781bda2766b7))
+* **deps:** bump the production-dependencies group with 3 updates ([#121](https://github.com/chrischall/simplisafe-mcp/issues/121)) ([767f830](https://github.com/chrischall/simplisafe-mcp/commit/767f830758bda8038fc69026b1f4f5a9833a20e1))
+* **deps:** bump the production-dependencies group with 3 updates ([#123](https://github.com/chrischall/simplisafe-mcp/issues/123)) ([2ce1ac8](https://github.com/chrischall/simplisafe-mcp/commit/2ce1ac8f8ffe704d3a0f3b1f4fb5c2267fd8f86e))
+
+
+### Documentation
+
+* **mint:** add sample prompts for the public catalog ([#118](https://github.com/chrischall/simplisafe-mcp/issues/118)) ([67c43dc](https://github.com/chrischall/simplisafe-mcp/commit/67c43dc474ce00997a0f5a23179fde22772e604e))
+
 ## [1.3.2](https://github.com/chrischall/simplisafe-mcp/compare/v1.3.1...v1.3.2) (2026-10-16)
 
 
