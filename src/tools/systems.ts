@@ -4,6 +4,7 @@ import { PositiveInt, confirmTokenParam, minifiedResult, toolAnnotations } from 
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
 import { confirmGate } from './_confirm.js';
+import { LOOKUP_META } from './hints.js';
 
 const sidArg = {
   sid: PositiveInt.optional().describe(
@@ -18,6 +19,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
       description:
         'List the SimpliSafe systems on this account with their current alarm state (off/home/away), ' +
         'alarming status, connectivity and power status. Start here to get the `sid` other tools take.',
+      _meta: LOOKUP_META,
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({}),
     },
@@ -34,6 +36,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
       description:
         'Get the current state of one SimpliSafe system: alarm state, whether it is alarming, ' +
         'base-station connectivity, power/battery status and any pending base-station messages.',
+      _meta: LOOKUP_META,
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({ ...sidArg }),
     },
@@ -56,6 +59,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
         'Get base-station settings for a system: entry/exit delays, alarm volume and duration, ' +
         'door chime, voice prompts, plus base-station health (wifi/cellular signal, wall power, ' +
         'backup battery, RF jamming). Does not include PINs — use simplisafe_get_pins for those.',
+      _meta: LOOKUP_META,
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({ ...sidArg }),
     },
@@ -99,6 +103,7 @@ export function registerSystemTools(server: McpServer, client: SimpliSafeClient)
       // from spilling the duress PIN. Hosts commonly auto-approve
       // read-only tools; readOnly: false + destructive: true makes them ask a
       // human first, as they do for arm/disarm and unlock.
+      _meta: LOOKUP_META,
       annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true, destructive: true }),
       inputSchema: z.object({
         ...sidArg,

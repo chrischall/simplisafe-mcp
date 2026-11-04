@@ -4,6 +4,7 @@ import { PositiveInt, confirmTokenParam, minifiedResult, toolAnnotations, verify
 import type { SimpliSafeClient } from '../client.js';
 import { normalizeSystem } from '../normalize.js';
 import { confirmGate, noAnswerDetail, readUnder, unverifiedDetail } from './_confirm.js';
+import { ALARM_META } from './hints.js';
 
 /** The three states the SS3 API accepts as a path segment. */
 const ALARM_STATES = ['off', 'home', 'away'] as const;
@@ -93,6 +94,7 @@ export function registerAlarmTools(server: McpServer, client: SimpliSafeClient):
         'security system: disarming leaves the house unmonitored, and arming can trigger a siren ' +
         'and a monitoring-center dispatch. ' +
         'After executing, the new state is verified by re-reading the system.',
+      _meta: ALARM_META,
       annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true, destructive: true }),
       inputSchema: z.object({
         state: z.enum(ALARM_STATES).describe('Target state: off (disarm), home, or away.'),
