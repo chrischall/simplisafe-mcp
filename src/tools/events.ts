@@ -19,18 +19,32 @@ const BRIEF_MAX = 120;
 const WHO_WROTE =
   'Event descriptions are written by SimpliSafe and sensor names by whoever set up the system.';
 
+/** The shortest a title is cut to before the event type gives way too. */
+const TITLE_FLOOR = 24;
+
+const cut = (s: string, n: number): string =>
+  s.length > n ? `${s.slice(0, Math.max(n - 1, 0))}…` : s;
+
 /**
- * One `view: "brief"` line: `title — <ISO time | no date> — <event type>`, at
- * most 120 characters (the title is shortened). The title is the sensor name
- * and the event text (`Front Door: Doorlock Unlocked`), whichever exist.
+ * One `view: "brief"` line: `title — <ISO time | no date> — <event type>`, cut
+ * to at most 120 characters as a WHOLE, title first: the title shortens until
+ * the line fits, and if the event type alone would still overflow once the
+ * title is at its floor, the event type is cut as well. The title is the
+ * sensor name and the event text (`Front Door: Doorlock Unlocked`), whichever
+ * exist. A title starting with `-- ` or `\` is escaped with one leading `\`,
+ * so a sensor name can never read as a note (the gateway strips one).
  */
 export function briefLine(e: NormalizedEvent): string {
   const text = e.info ?? e.messageSubject ?? e.sensorTypeName ?? '(event)';
-  const title = e.sensorName ? `${e.sensorName}: ${text}` : text;
-  const tail = ` — ${e.isoTime || 'no date'} — ${e.eventType || 'event'}`;
-  const room = BRIEF_MAX - tail.length;
-  const shown = title.length > room ? `${title.slice(0, Math.max(room - 1, 0))}…` : title;
-  return `${shown}${tail}`;
+  const raw = e.sensorName ? `${e.sensorName}: ${text}` : text;
+  const title = raw.startsWith('-- ') || raw.startsWith('\\') ? `\\${raw}` : raw;
+  const status = e.eventType || 'event';
+  const sep = ` — ${e.isoTime || 'no date'} — `;
+  const room = BRIEF_MAX - sep.length;
+  if (title.length + status.length <= room) return `${title}${sep}${status}`;
+  const titleRoom = Math.max(room - status.length, Math.min(title.length, TITLE_FLOOR));
+  const shown = cut(title, titleRoom);
+  return `${shown}${sep}${cut(status, room - shown.length)}`;
 }
 
 export function registerEventTools(server: McpServer, client: SimpliSafeClient): void {
