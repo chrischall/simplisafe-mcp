@@ -11,6 +11,7 @@ import {
 import type { SimpliSafeClient } from '../client.js';
 import { lockStateName } from '../normalize.js';
 import { confirmGate, noAnswerDetail, readUnder, unverifiedDetail } from './_confirm.js';
+import { LOCK_META } from './hints.js';
 
 const LOCK_STATES = ['lock', 'unlock'] as const;
 type LockAction = (typeof LOCK_STATES)[number];
@@ -77,6 +78,7 @@ export function registerLockTools(server: McpServer, client: SimpliSafeClient): 
         'Unlocking physically opens a door lock, so it is gated even though it is technically ' +
         'reversible. After executing, the result is verified ' +
         'by re-reading the lock state.',
+      _meta: LOCK_META,
       annotations: toolAnnotations({ readOnly: false, idempotent: true, openWorld: true, destructive: true }),
       inputSchema: z.object({
         serial: z

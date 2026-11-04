@@ -20,7 +20,7 @@ Developed and maintained by AI (Claude Code).
 | `simplisafe_get_system` | One system's state, connectivity, base-station messages |
 | `simplisafe_list_sensors` | Sensors with battery / offline / triggered status, filterable |
 | `simplisafe_list_locks` | Smart locks with locked / unlocked / jammed state |
-| `simplisafe_get_events` | Recent base-station events (arm, disarm, opens, alarms) |
+| `simplisafe_get_events` | Recent base-station events (arm, disarm, opens, alarms); `view: "brief"` gives one line per event |
 | `simplisafe_get_settings` | Entry/exit delays, volumes, base-station health |
 | `simplisafe_get_pins` | Alarm PINs — **cleartext, asks you to confirm first** |
 | `simplisafe_set_alarm_state` | Arm home / arm away / disarm — **asks you to confirm first** |

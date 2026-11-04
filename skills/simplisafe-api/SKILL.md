@@ -136,6 +136,30 @@ the codes:
 ss_api GET "/ss3/subscriptions/$SID/settings/normal?forceUpdate=false" | jq '.settings.normal'
 ```
 
+## In context groups
+
+When the MCP server (`simplisafe-mcp`) is hosted behind mcp-host with context
+groups on, its tools belong to the **home** group (`_meta.mint.domain: home`).
+
+- **Canonical read:** `simplisafe_get_events` answers *what's new* at home. With
+  `view: "brief"` it returns one line per event — `<sensor>: <event> — <ISO
+  time> — <event type>`, ≤ 120 chars — as the untrusted-data envelope's `data`
+  array (event text is SimpliSafe's, sensor names are whoever set the system
+  up), with `-- none` for an empty log and `-- more` when the page came back
+  full. There is no whats-due or whats-on read: nothing here is scheduled.
+- **No subject:** `sid` is optional on a one-system account. A system's only
+  label is its location, so the server does not publish one in its schema. On
+  an account with several systems, the group read without a `sid` returns the
+  server's "`sid` is required" error rather than guessing.
+- **Writes:** `simplisafe_set_alarm_state` (arm/disarm) and
+  `simplisafe_set_lock_state` are `turn-on-off` hints. They are never canonical,
+  and they still ask for confirmation. The rest are `lookup`.
+- **A compound ask** looks like "anything new at home, and is the pool heater
+  on?" — the group asks this server for its brief events beside the other home
+  members.
+- Not browser-bridged: the server talks to SimpliSafe's API directly, so the
+  group never answers "needs your browser open" for it.
+
 ## Notes
 
 - `forceUpdate=true` makes the base station re-poll its devices — slower and

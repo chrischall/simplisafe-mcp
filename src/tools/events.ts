@@ -1,8 +1,37 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/server';
-import { PositiveInt, minifiedResult, toolAnnotations } from '@chrischall/mcp-utils';
+import {
+  PositiveInt,
+  UNTRUSTED_CONTENT_RULE,
+  minifiedResult,
+  toolAnnotations,
+  untrustedEnvelope,
+} from '@chrischall/mcp-utils';
 import type { SimpliSafeClient } from '../client.js';
-import { normalizeEvent } from '../normalize.js';
+import { normalizeEvent, type NormalizedEvent } from '../normalize.js';
+import { EVENTS_META } from './hints.js';
+
+/** The upstream page size when `num_events` is not given (and its ceiling). */
+const DEFAULT_NUM_EVENTS = 50;
+const BRIEF_MAX = 120;
+
+/** Who wrote the text a brief line carries, for the untrusted-data envelope's note. */
+const WHO_WROTE =
+  'Event descriptions are written by SimpliSafe and sensor names by whoever set up the system.';
+
+/**
+ * One `view: "brief"` line: `title — <ISO time | no date> — <event type>`, at
+ * most 120 characters (the title is shortened). The title is the sensor name
+ * and the event text (`Front Door: Doorlock Unlocked`), whichever exist.
+ */
+export function briefLine(e: NormalizedEvent): string {
+  const text = e.info ?? e.messageSubject ?? e.sensorTypeName ?? '(event)';
+  const title = e.sensorName ? `${e.sensorName}: ${text}` : text;
+  const tail = ` — ${e.isoTime || 'no date'} — ${e.eventType || 'event'}`;
+  const room = BRIEF_MAX - tail.length;
+  const shown = title.length > room ? `${title.slice(0, Math.max(room - 1, 0))}…` : title;
+  return `${shown}${tail}`;
+}
 
 export function registerEventTools(server: McpServer, client: SimpliSafeClient): void {
   server.registerTool(
@@ -12,6 +41,7 @@ export function registerEventTools(server: McpServer, client: SimpliSafeClient):
         'Get recent events recorded by the base station — arm/disarm, sensor opens, lock and ' +
         'unlock, alarms, errors — newest first. Each event carries an ISO timestamp alongside ' +
         'the raw epoch seconds.',
+      _meta: EVENTS_META,
       annotations: toolAnnotations({ readOnly: true, openWorld: true }),
       inputSchema: z.object({
         sid: PositiveInt.optional().describe(
@@ -32,9 +62,17 @@ export function registerEventTools(server: McpServer, client: SimpliSafeClient):
           .string()
           .optional()
           .describe('Only return events with this eventType, e.g. "activity" or "alarm".'),
+        view: z
+          .enum(['full', 'brief'])
+          .optional()
+          .describe(
+            '"full" (default) returns the events as records; "brief" returns one line per event — ' +
+              '"<sensor>: <event> — <ISO time> — <event type>" — as the untrusted-data envelope\'s ' +
+              '`data`, with "-- none" for no events and "-- more" when the page came back full.',
+          ),
       }),
     },
-    async ({ sid, num_events, from_timestamp, event_type }) => {
+    async ({ sid, num_events, from_timestamp, event_type, view }) => {
       const system = await client.resolveSystem(sid);
 
       // Note the route: events live under the version-neutral
@@ -51,10 +89,23 @@ export function registerEventTools(server: McpServer, client: SimpliSafeClient):
         },
       );
 
-      let events = (res.events ?? []).map(normalizeEvent);
+      const raw = res.events ?? [];
+      let events = raw.map(normalizeEvent);
       if (event_type) {
         const want = event_type.toLowerCase();
         events = events.filter((e) => e.eventType?.toLowerCase() === want);
+      }
+
+      if (view === 'brief') {
+        const lines = events.map(briefLine);
+        // A full page means older events may exist past it; SimpliSafe reports
+        // no total, so the note says "more" rather than "N of M". "-- none" is
+        // said only when nothing lies past the page either.
+        const more = raw.length >= (num_events ?? DEFAULT_NUM_EVENTS);
+        if (more) lines.push('-- more');
+        else if (lines.length === 0) lines.push('-- none');
+        const payload = untrustedEnvelope(lines, { note: `${WHO_WROTE} ${UNTRUSTED_CONTENT_RULE}` });
+        return { content: [{ type: 'text' as const, text: JSON.stringify(payload) }] };
       }
 
       return minifiedResult({ sid: system.sid, count: events.length, events });
