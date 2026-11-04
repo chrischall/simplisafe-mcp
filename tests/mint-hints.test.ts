@@ -185,6 +185,25 @@ describe('simplisafe_get_events view: brief', () => {
     expect(line).toMatch(/^Garage: x+… — .+ — activity$/);
   });
 
+  it('cuts the line as a WHOLE, the event type too when a long one would overflow', async () => {
+    requestSpy.mockResolvedValue({
+      events: [event(1, 'Doorlock Unlocked', 'Front Door', 't'.repeat(200))],
+    } as never);
+    const [line] = (await brief()).data;
+    expect(line!.length).toBeLessThanOrEqual(120);
+    expect(line).toMatch(/^Front Door: Doorlock Un… — .+ — t+…$/);
+  });
+
+  it('escapes a title that starts with "-- " so the item never reads as a note', async () => {
+    requestSpy.mockResolvedValue({ events: [{ eventId: 9, info: '-- none' }] } as never);
+    expect((await brief()).data).toEqual(['\\-- none — no date — event']);
+  });
+
+  it('escapes a title that starts with a backslash', async () => {
+    requestSpy.mockResolvedValue({ events: [{ eventId: 9, sensorName: '\\Hall', info: 'Open' }] } as never);
+    expect((await brief()).data).toEqual(['\\\\Hall: Open — no date — event']);
+  });
+
   it('says "no date" for an event without a timestamp', async () => {
     requestSpy.mockResolvedValue({ events: [{ eventId: 9, info: 'Sensor error' }] } as never);
     expect((await brief()).data).toEqual(['Sensor error — no date — event']);
