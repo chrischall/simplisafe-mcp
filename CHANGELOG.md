@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/chrischall/simplisafe-mcp/compare/v1.4.0...v1.4.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **deps:** bump @chrischall/mcp-utils ([#129](https://github.com/chrischall/simplisafe-mcp/issues/129)) ([8ca37ad](https://github.com/chrischall/simplisafe-mcp/commit/8ca37ad8dd1fc00255da47c8d51c17a5a82d65a8))
+
 ## [1.4.0](https://github.com/chrischall/simplisafe-mcp/compare/v1.3.2...v1.4.0) (2026-11-04)
 
 
