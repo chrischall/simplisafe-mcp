@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1](https://github.com/chrischall/simplisafe-mcp/compare/v1.4.0...v1.4.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **deps:** bump @chrischall/mcp-utils ([#129](https://github.com/chrischall/simplisafe-mcp/issues/129)) ([8ca37ad](https://github.com/chrischall/simplisafe-mcp/commit/8ca37ad8dd1fc00255da47c8d51c17a5a82d65a8))
+* **deps:** bump the production-dependencies group with 2 updates ([#131](https://github.com/chrischall/simplisafe-mcp/issues/131)) ([18ab3b9](https://github.com/chrischall/simplisafe-mcp/commit/18ab3b9a73ee0aa2922e80aaf87ec01c9953c6ab))
+
 ## [1.4.0](https://github.com/chrischall/simplisafe-mcp/compare/v1.3.2...v1.4.0) (2026-11-04)
 
 
